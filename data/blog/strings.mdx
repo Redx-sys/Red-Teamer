@@ -1,0 +1,145 @@
+---
+title: 'Strings'
+date: '2024-07-07'
+lastmod: '2023-08-05'
+tags: ['labs', 'mobile', 'android', 'mobilehackinglabs']
+draft: false
+summary: 'Release of Tailwind Nextjs Starter Blog template v2.0, refactored with Nextjs App directory and React Server Components setup.Discover the new features and how to migrate from V1.'
+images: ['/static/images/twitter-card.png']
+---
+
+## Introduccion
+
+![logo strings](/static/images/strings/strings.png)
+
+Strings es un laboratorio que se encuentra disponible en [MobileHackingLab](https://www.mobilehackinglab.com/link/gnVA9O).
+En este laboratorio se nos proporciona una aplicacion de Android y el objetivo es encontrar una bandera. 
+El formato tiene que ser `MHL{...}`. Para esto vamos a tener que realizar ingenieria inversa a la apk, identificar 
+la actividad exportada, encontrar una manera de invocar la actividad y utlizar frida para escanear la memoria en busca de la flag. 
+
+Para todo esto vamos a tener que tener una comprension de las aplicaciones Android, 
+de ingenieria inversa en aplicaciones Android y saber como usar [Frida](https://frida.re/).
+Si aun no tenemos ese conocimiento, relax, lo vamos a ir obteniendo sobre la marcha a medida que avancemos en este post y metamos manos.
+
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+## Extraer y decompilar la APK
+
+En este laboratorio se nos da acceso a un dispositivo Android por medio de [Corellium](https://www.corellium.com/solutions/mobile-app-pentesting), como el acceso es limitado,me descargo la apk para hacerlo en mi propio emulador. 
+![Image 1](/static/images/strings/1.png)
+
+Ingresamos al dispositivo que se nos proporciona y para listar todos los paquetes de aplicaciones instaladas en 
+el dispositivo usamos `pm list packages`. Esta lista incluye tanto las aplicaciones del usuario como las del dispositivo. 
+Cada aplicacion en Android se identifica mediante un nombre de paquete unico que generalmente sigue el formato 
+**com.nombredeempresa.nombredeaplicacion**. Y como estamos buscando uno en particular. utilizamos grep para encontrar uno que diga 
+**_mobilehacking_**.
+
+```shell:ListarPaquetes
+pm list packages | grep mobilehacking
+```
+
+Para obtener la ruta completa donde se encuentra almacenado el archivo apk de la aplicacion utilizo `pm path com.mobilehacking.challenge`.
+
+```shell:RutaCompleta
+pm path com.mobilehackinglab.challenge
+```
+![](/static/images/strings/2.png)
+
+![](/static/images/strings/3.png)
+
+Sabiendo la ruta donde se encuentra la aplicacion,procedemos a descargarla con `adb pull PATH_TO_APK`.
+Con este comando lo que hacemos es transferir el archivo apk desde el dispositivo Android a la computadora local.
+
+![](/static/images/strings/4.png)
+
+Ahora descomprimimos el archivo APK en una estructura de directorios y archivos con [APKTool](https://apktool.org/docs/the-basics/intro), que descompila el archivo en sus componentes originales en formato legible. 
+
+```shell:Decompile
+apktool d APP.APK
+```
+
+![](/static/images/strings/6.png)
+
+## Code Review
+Comencemos por el AndroidManifest.xml.
+![](/static/images/strings/5.png)
+
+Al hacer code review vemos que:
+1. La _activty_ `com.mobilehacking.challenge.Activity2` tiene el atributo `android:exported="true"`. Esto indica que la _Activity_ es accesible desde fuera de la aplicacion, osea, cualquier aplicacion puede acceder a ella e iniciarla por su nombre de clase exacto.
+2. Dentro de ella encontramos un _Intent-filter_, especificando que _Intents_ pueden manejar esta _activity_.
+
+OK, pero que es un Intent? Y un Intent-filter?
+
+En la documentacion de Android encontramos que un Intent [_“es básicamente una estructura de datos pasiva que contiene una descripción abstracta de una acción a realizar”_](https://developer.android.com/reference/android/content/Intent) y tambien [_“es un objeto de mensajería que puede utilizar para solicitar una acción desde otro componente de la aplicacion“_](https://developer.android.com/guide/components/intents-filters#Receiving). Bajemoslo a tierra.
+
+Un **Intent** es como una peticion o un mensaje que una aplicacion envia para pedir a otra app que haga algo especifico.Puedes pensar en ello como una especie de carta que una app le envia a otra para decirle que haga una **ACCION** determinada, como abrir una pagina web, mostrar una foto, reproducir un video o otra tarea.
+
+Características principales de un intent:
+1. **action**: Es lo que la aplicación quiere hacer, como abrir una página web o enviar un mensaje de texto.
+2. **data**: Son detalles adicionales que pueden acompañar a la acción, como la dirección web que se desea abrir o la foto que se desea mostrar.
+3. **category**: Son etiquetas adicionales que pueden ayudar a la aplicación a entender mejor el tipo de tarea que se quiere realizar.
+
+Imagina que estás en tu Android y haces clic en un enlace a una página web dentro de una aplicación. Esa aplicación crea un **intent** con la acción de **VIEW** y los datos del enlace que clicaste. Luego, le envía este **intent** a un navegador web. El navegador, al recibirlo, entiende que debe abrir esa página web porque el **intent** tiene la acción de **view** y los datos de la URL que quieres visitar.
+
+Y los **intent-filter** especifican el tipo de **intent** que acepta en funcion de la _action_,_data_ y _category_ del intent.
+
+```xml:AndroidManifest
+<activity android:exported="true" android:name="com.mobilehackinglab.challenge.Activity2">
+    <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:host="labs" android:scheme="mhl" />
+    </intent-filter>
+</activity>
+```
+
+Desglozemos el codigo:
+
+```xml
+<action android:name="android.intent.action.VIEW"/>
+```
+- `<action>`: Define la acción que el intent puede realizar. En este caso, **android.intent.action.VIEW** indica que la actividad puede manejar intents cuya acción sea ver o mostrar algo. Es comúnmente utilizado para abrir URLs, ver imágenes, abrir archivos, etc.
+- `android:name`: Es el nombre de la acción específica que el intent-filter está configurado para manejar.
+
+```xml
+<category android:name="android.intent.category.DEFAULT"/>
+```
+Especifica que esta actividad puede manejar el intent por defecto de su tipo (VIEW en este caso).
+- `<category>`: Define la categoría a la que pertenece el intent. **android.intent.category.DEFAULT** indica que esta actividad es la acción predeterminada para manejar este tipo de intent si no se especifica otra actividad explícitamente.
+- `android:name`: Es el nombre de la categoría específica que el intent-filter está configurado para manejar.
+
+```xml
+<category android:name="android.intent.category.BROWSABLE"/>
+```
+- `<category>`: Otra categoría que puede tener el intent. **android.intent.category.BROWSABLE** indica que la actividad puede ser lanzada directamente desde un navegador web como resultado de hacer clic en un enlace.
+- `android:name`: Es el nombre de la categoría específica que el intent-filter está configurado para manejar.
+
+```xml
+<data android:host="labs" android:scheme="mhl"/>
+```
+
+- `<data>:` Define los datos que el intent puede manejar. En este caso:
+  - `android:scheme="mhl"`: Especifica el esquema o protocolo de los datos. El esquema `mhl` indica que el intent puede manejar URIs que comiencen con `mhl://`.
+  - `android:host="labs"`: Especifica el host o servidor al que se dirige el intent dentro del contexto del esquema especificado. En este caso, el host es `labs`.
+
+
+
+
+
+
+
+
+
+
+
+
+-----
+
+## Referencias
+
+1. https://developer.android.com/reference/android/content/Intent
+2. https://developer.android.com/privacy-and-security/risks/android-exported
+3. https://codeql.github.com/codeql-query-help/java/java-android-implicitly-exported-component/
+4. https://developer.android.com/guide/components/intents-filters
