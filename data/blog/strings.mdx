@@ -4,8 +4,8 @@ date: '2024-07-07'
 lastmod: '2023-08-05'
 tags: ['labs', 'mobile', 'android', 'mobilehackinglabs']
 draft: false
-summary: 'Encuentre una marca oculta en la aplicación investigando los componentes, realizando ingenieria inversa, code review  y utilizando instrumentación dinámica.'
-images: ['/static/images/twitter-card.png']
+summary: 'En este laboratorio se nos proporciona una aplicacion de Android y el objetivo es encontrar una bandera. El formato tiene que ser `MHL{...}`. Para esto vamos a tener que realizar ingenieria inversa a la apk, identificar la actividad exportada, encontrar una manera de invocar la actividad y utlizar frida para escanear la memoria en busca de la bandera.'
+images: ['/static/images/strings/strings.png']
 ---
 
 ## Introduccion
@@ -210,14 +210,116 @@ como la incializacion de la interfaz de usuario y la gestion del ciclo de vida.
 ```java
 setContentView(R.layout.activity_2);
 ```
+Establece el diseno de una activity en la pantalla del dispositivo. `setContentView` toma como argumento una referencia a un recurso
+de diseno,en este caso `R.layout`. Si vamos a la estructura de carpetas generada luego de decompilar la apk entendemos mejor esa estructura.
 
+![](/static/images/strings/8.png)
 
+```java
+SharedPreferences sharedPreferences = getSharedPreferences("DAD4", 0);
+```
+Obtiene una instancia del objeto `SharedPreferences` asociada con el nombre "DAD4". Los SharedPreferences
+son un almacen de datos clave-valor que persisten en toda la vida de la aplicacion. El 0, indica el modo de acceso
+,en este caso MODE_PRIVATE, que significa que solo la app tiene acceso a estos `sharedPreferences`.
 
+```java
+String u_1 = sharedPreferences.getString("UUU0133", null);
+```
+Este método obtiene el valor asociado con la clave "UUU0133" de los SharedPreferences. 
+Si no hay ningún valor asociado con esa clave, devuelve null.
 
+```java
+boolean isActionView = Intrinsics.areEqual(getIntent().getAction(), "android.intent.action.VIEW");
+```
+**getIntent().getAction()** obtiene la action asociada con la intent que inicio la activity.
+E **Intrinsics.areEqual** es una funcion que compara dos valores y determina si son iguales.
+Entonces, **isActionView** sera True, si la action del intent es "android.intent.action.VIEW",
+que representa la accion de visualizar, que indica que la actividad esta mostrando algo al usuario.
 
+```java
+boolean isU1Matching = Intrinsics.areEqual(u_1, cd());
+```
 
+`u_1` es un string que se obtuvo anteriormente de los **sharedPreferences**, usando la clave `UUU0133`.
+**cd()** es una funcion, que en este caso, el valor que devuelve **cd()** se compara con `u_1`, y en caso de que 
+sean iguales, `isU1Matching` sera True.
 
+Segunda parte
 
+```java
+if (isActionView && isU1Matching) {
+            Uri uri = getIntent().getData();
+            if (uri != null && Intrinsics.areEqual(uri.getScheme(), "mhl") && Intrinsics.areEqual(uri.getHost(), "labs")) {
+                String base64Value = uri.getLastPathSegment();
+                byte[] decodedValue = Base64.decode(base64Value, 0);
+                if (decodedValue != null) {
+                    String ds = new String(decodedValue, Charsets.UTF_8);
+                    byte[] bytes = "your_secret_key_1234567890123456".getBytes(Charsets.UTF_8);
+                    Intrinsics.checkNotNullExpressionValue(bytes, "this as java.lang.String).getBytes(charset)");
+                    String str = decrypt("AES/CBC/PKCS5Padding", "bqGrDKdQ8zo26HflRsGvVA==", new SecretKeySpec(bytes, "AES"));
+                    if (str.equals(ds)) {
+                        System.loadLibrary("flag");
+                        String s = getflag();
+                        Toast.makeText(getApplicationContext(), s, 1).show();
+                        return;
+```
+
+```java
+if (isActionView && isU1Matching) {
+            Uri uri = getIntent().getData();
+```
+
+Si `isActionView` y `isU1Matching` son True, obtiene la `uri` asociada a ese intent, permitiendo
+acceder a mas informacion.
+
+```java
+if (uri != null && Intrinsics.areEqual(uri.getScheme(), "mhl") && Intrinsics.areEqual(uri.getHost(), "labs")) {
+            String base64Value = uri.getLastPathSegment();
+            byte[] decodedValue = Base64.decode(base64Value, 0);
+```
+
+Verifica que `uri` no esta vacia, que el `scheme` sea igual a "mhl" y que el `host` sea igual a "labs".
+`uri.getLastPathSegment()` obtiene el último segmento de la ruta de la URI. 
+Se asume que este segmento contiene un valor en formato Base64 y decodifica el valor Base64 almacenado en base64Value.
+
+```java
+if (decodedValue != null) {
+                    String ds = new String(decodedValue, Charsets.UTF_8);
+                    byte[] bytes = "your_secret_key_1234567890123456".getBytes(Charsets.UTF_8);
+                    Intrinsics.checkNotNullExpressionValue(bytes, "this as java.lang.String).getBytes(charset)");
+                    String str = decrypt("AES/CBC/PKCS5Padding", "bqGrDKdQ8zo26HflRsGvVA==", new SecretKeySpec(bytes, "AES"));
+```
+
+Si decodeValue no es vacio, procede con el bloque de codigo. **String ds = new String(decodedValue, Charsets.UTF_8)** convierte el arreglo
+a un string. Esto convierte los datos decodificados de Base64 a su representación de texto.
+Luego,crea un arreglo de bytes a partir de la cadena "your_secret_key_1234567890123456", utilizando UTF-8 como codificación. 
+Este arreglo de bytes se usa como clave secreta para el proceso de descifrado.
+Esta línea parece ser una validación interna o un chequeo de no nulidad para el arreglo de bytes. 
+
+```java
+String str = decrypt("AES/CBC/PKCS5Padding", "bqGrDKdQ8zo26HflRsGvVA==", new SecretKeySpec(bytes, "AES"));
+```
+Invoca una funcion decrypt para descifrar un texto cifrado utilizando el algoritmo AES en modo CBC(Cipher Block Chaining) con 
+relleno PKCS5Padding. Se utiliza una clave secreta ("your_secret_key_1234567890123456") derivada del arreglo de bytes 
+creado anteriormente.
+
+En resumen: una vez que se verifica que `decodeValue` no es `null`, se convierte a un string (`ds`) y se prepara una clave secreta (`bytes`)
+para el proceso de descifrado AES.
+
+```java
+if (str.equals(ds)) {
+    System.loadLibrary("flag");
+    String s = getflag();
+    Toast.makeText(getApplicationContext(), s, 1).show();
+    return;
+```
+Compara `str` con `ds`. Luego se carga una biblioteca nativa llamada "flag"
+
+>Las bibliotecas nativas son archivos compilados que contienen funciones implementadas en lenguajes como C o C++, y se utilizan cuando se requiere un rendimiento o funcionalidad específica no proporcionada directamente por el entorno de ejecución Java.
+
+Llama a la **getflag()** para obtener la bandera.
+**Toast.makeText(getApplicationContext(), s, 1).show()** muestra un mensaje emergente (toast) en la aplicación con el contenido de la cadena s. 
+Los mensajes Toast son breves notificaciones visuales que aparecen temporalmente en la pantalla.
 
 -----
 
@@ -228,3 +330,5 @@ setContentView(R.layout.activity_2);
 3. https://codeql.github.com/codeql-query-help/java/java-android-implicitly-exported-component/
 4. https://developer.android.com/guide/components/intents-filters
 5. https://abhiandroid.com/programming/oncreate-activity-android.html#gsc.tab=0
+6. https://stackoverflow.com/questions/48122980/what-does-0-mean-in-getsharedpreferences
+7. https://stackoverflow.com/questions/39897378/what-does-the-number-mean-in-base64-encodetostringdata-number
