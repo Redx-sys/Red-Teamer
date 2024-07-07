@@ -4,7 +4,7 @@ date: '2024-07-07'
 lastmod: '2023-08-05'
 tags: ['labs', 'mobile', 'android', 'mobilehackinglabs']
 draft: false
-summary: 'Release of Tailwind Nextjs Starter Blog template v2.0, refactored with Nextjs App directory and React Server Components setup.Discover the new features and how to migrate from V1.'
+summary: 'Encuentre una marca oculta en la aplicación investigando los componentes, realizando ingenieria inversa, code review  y utilizando instrumentación dinámica.'
 images: ['/static/images/twitter-card.png']
 ---
 
@@ -24,10 +24,11 @@ Si aun no tenemos ese conocimiento, relax, lo vamos a ir obteniendo sobre la mar
 
 <TOCInline toc={props.toc} exclude="Introduction" />
 
-## Extraer y decompilar la APK
+## 1.Extraer y decompilar la APK
 
 En este laboratorio se nos da acceso a un dispositivo Android por medio de [Corellium](https://www.corellium.com/solutions/mobile-app-pentesting), como el acceso es limitado,me descargo la apk para hacerlo en mi propio emulador. 
 ![Image 1](/static/images/strings/1.png)
+
 
 Ingresamos al dispositivo que se nos proporciona y para listar todos los paquetes de aplicaciones instaladas en 
 el dispositivo usamos `pm list packages`. Esta lista incluye tanto las aplicaciones del usuario como las del dispositivo. 
@@ -61,7 +62,8 @@ apktool d APP.APK
 
 ![](/static/images/strings/6.png)
 
-## Code Review
+## 2.Code Review
+### 2.1.AndroidManifest
 Comencemos por el AndroidManifest.xml.
 ![](/static/images/strings/5.png)
 
@@ -125,7 +127,89 @@ Especifica que esta actividad puede manejar el intent por defecto de su tipo (VI
   - `android:host="labs"`: Especifica el host o servidor al que se dirige el intent dentro del contexto del esquema especificado. En este caso, el host es `labs`.
 
 
+Habiendo dejado claro lo que ocurre en el codigo, en pocas palabras, tenemos que encontrar una forma de poder acceder a la Activity2 ya que posee el atributo `android:exported="true"`
+teniendo un problema de [Improper Export of Android Application Components](https://cwe.mitre.org/data/definitions/926.html) siendo accesible desde fuera de la app propia.
 
+### 2.2.Activity2
+
+Ahora que sabemos que activity es a la que podemos acceder, leamos su codigo para entender.
+
+![](/static/images/strings/7.png)
+
+```java:Activity2
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_2);
+        SharedPreferences sharedPreferences = getSharedPreferences("DAD4", 0);
+        String u_1 = sharedPreferences.getString("UUU0133", null);
+        boolean isActionView = Intrinsics.areEqual(getIntent().getAction(), "android.intent.action.VIEW");
+        boolean isU1Matching = Intrinsics.areEqual(u_1, cd());
+        if (isActionView && isU1Matching) {
+            Uri uri = getIntent().getData();
+            if (uri != null && Intrinsics.areEqual(uri.getScheme(), "mhl") && Intrinsics.areEqual(uri.getHost(), "labs")) {
+                String base64Value = uri.getLastPathSegment();
+                byte[] decodedValue = Base64.decode(base64Value, 0);
+                if (decodedValue != null) {
+                    String ds = new String(decodedValue, Charsets.UTF_8);
+                    byte[] bytes = "your_secret_key_1234567890123456".getBytes(Charsets.UTF_8);
+                    Intrinsics.checkNotNullExpressionValue(bytes, "this as java.lang.String).getBytes(charset)");
+                    String str = decrypt("AES/CBC/PKCS5Padding", "bqGrDKdQ8zo26HflRsGvVA==", new SecretKeySpec(bytes, "AES"));
+                    if (str.equals(ds)) {
+                        System.loadLibrary("flag");
+                        String s = getflag();
+                        Toast.makeText(getApplicationContext(), s, 1).show();
+                        return;
+                    } else {
+                        finishAffinity();
+                        finish();
+                        System.exit(0);
+                        return;
+                    }
+                }
+                finishAffinity();
+                finish();
+                System.exit(0);
+                return;
+            }
+            finishAffinity();
+            finish();
+            System.exit(0);
+            return;
+        }
+        finishAffinity();
+        finish();
+        System.exit(0);
+    }
+```
+
+Vayamos por partes.
+
+```java
+...
+public void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_2);
+    SharedPreferences sharedPreferences = getSharedPreferences("DAD4", 0);
+    String u_1 = sharedPreferences.getString("UUU0133", null);
+    boolean isActionView = Intrinsics.areEqual(getIntent().getAction(), "android.intent.action.VIEW");
+    boolean isU1Matching = Intrinsics.areEqual(u_1, cd());
+...
+```
+
+```java
+public void onCreate(Bundle savedInstanceState)
+```  
+Cuando una actividad se llama o se inicia por primera vez, el método onCreate(Bundle saveInstanceState) es responsable de crear la actividad..
+
+```java
+super.onCreate(savedInstanceState);
+```
+Llama la clase onCreate,esta clase realiza configuraciones para la activity,
+como la incializacion de la interfaz de usuario y la gestion del ciclo de vida.
+
+```java
+setContentView(R.layout.activity_2);
+```
 
 
 
@@ -143,3 +227,4 @@ Especifica que esta actividad puede manejar el intent por defecto de su tipo (VI
 2. https://developer.android.com/privacy-and-security/risks/android-exported
 3. https://codeql.github.com/codeql-query-help/java/java-android-implicitly-exported-component/
 4. https://developer.android.com/guide/components/intents-filters
+5. https://abhiandroid.com/programming/oncreate-activity-android.html#gsc.tab=0

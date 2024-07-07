@@ -3,7 +3,7 @@ const siteMetadata = {
   title: 'Offensive Mobile',
   author: 'Nicolas Gula',
   headerTitle: '',
-  description: 'A blog created for learn Android & IOS Offensive Security',
+  description: 'A blog created to learn Android & IOS Offensive Security',
   language: 'en-us',
   theme: 'system', // system, dark or light
   siteUrl: 'https://offensivemobile.vercel.app',
