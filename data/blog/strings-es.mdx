@@ -2,7 +2,7 @@
 title: 'Strings'
 date: '2024-07-07'
 lastmod: '2023-08-05'
-tags: ['spanish', 'labs', 'mobile', 'android', 'mobilehackinglabs']
+tags: ['spanish', 'labs', 'mobile', 'android', 'mobilehackinglabs', 'frida', 'fridump']
 draft: false
 summary: 'En este laboratorio se nos proporciona una aplicacion de Android y el objetivo es encontrar una bandera. El formato tiene que ser `MHL{...}`. Para esto vamos a tener que realizar ingenieria inversa a la apk, identificar la actividad exportada, encontrar una manera de invocar la actividad y utlizar frida para escanear la memoria en busca de la bandera.'
 images: ['/static/images/strings/strings.png']
@@ -22,7 +22,7 @@ de ingenieria inversa en aplicaciones Android y saber como usar [Frida](https://
 Si aun no tenemos ese conocimiento, relax, lo vamos a ir obteniendo sobre la marcha a medida que avancemos en este post y metamos manos.
 
 
-<TOCInline toc={props.toc} exclude="Introduction" />
+<TOCInline toc={props.toc} exclude="Introduccion" />
 
 ## 1.Extraer y decompilar la APK
 
@@ -570,30 +570,6 @@ adb shell am start -W -a android.intent.action.VIEW -d "mhl://labs/bWhsX3NlY3Jld
 Por ultimo utilizo [Fridump](https://github.com/Nightbringer21/fridump) para volcar la memoria y encontrar la flag.
 
 ![](/static/images/strings/15.png)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 -----
 
