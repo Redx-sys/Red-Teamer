@@ -2,7 +2,7 @@
 title: 'Strings'
 date: '2024-07-07'
 lastmod: '2023-08-05'
-tags: ['labs', 'mobile', 'android', 'mobilehackinglabs']
+tags: ['spanish', 'labs', 'mobile', 'android', 'mobilehackinglabs']
 draft: false
 summary: 'En este laboratorio se nos proporciona una aplicacion de Android y el objetivo es encontrar una bandera. El formato tiene que ser `MHL{...}`. Para esto vamos a tener que realizar ingenieria inversa a la apk, identificar la actividad exportada, encontrar una manera de invocar la actividad y utlizar frida para escanear la memoria en busca de la bandera.'
 images: ['/static/images/strings/strings.png']
@@ -321,6 +321,280 @@ Llama a la **getflag()** para obtener la bandera.
 **Toast.makeText(getApplicationContext(), s, 1).show()** muestra un mensaje emergente (toast) en la aplicación con el contenido de la cadena s. 
 Los mensajes Toast son breves notificaciones visuales que aparecen temporalmente en la pantalla.
 
+Bueno, hasta aca bastante bien, nos falta leer dos metodos mas que ya mencionamos anteriromente y son `decrypt` y `cd`.
+
+![](/static/images/strings/9.png)
+
+```java:Decrypt
+String str = decrypt("AES/CBC/PKCS5Padding", "bqGrDKdQ8zo26HflRsGvVA==", new SecretKeySpec(bytes, "AES"));
+....
+<SNIP>
+....
+  public final String decrypt(String algorithm, String cipherText, SecretKeySpec key) {
+        Intrinsics.checkNotNullParameter(algorithm, "algorithm");
+        Intrinsics.checkNotNullParameter(cipherText, "cipherText");
+        Intrinsics.checkNotNullParameter(key, "key");
+        Cipher cipher = Cipher.getInstance(algorithm);
+        try {
+            byte[] bytes = Activity2Kt.fixedIV.getBytes(Charsets.UTF_8);
+            Intrinsics.checkNotNullExpressionValue(bytes, "this as java.lang.String).getBytes(charset)");
+            IvParameterSpec ivSpec = new IvParameterSpec(bytes);
+            cipher.init(2, key, ivSpec);
+            byte[] decodedCipherText = Base64.decode(cipherText, 0);
+            byte[] decrypted = cipher.doFinal(decodedCipherText);
+            Intrinsics.checkNotNull(decrypted);
+            return new String(decrypted, Charsets.UTF_8);
+        } catch (Exception e) {
+            throw new RuntimeException("Decryption failed", e);
+        }
+    }
+...
+```
+
+```java
+decrypt(String algorithm, String cipherText, SecretKeySpec key)
+```
+
+- `algorithm`: Es el algoritmo de cifrado que se va a utilizar.
+- `cipherText`: Texto cifrado que se va a decifrar.
+- `key`: La clave secreta utilizada para el cifrado y descifrado.
+
+`Intrinsics.checkNotNullParameter`asegura que ninguno de los parámetros sea null. 
+Esta validación es importante para evitar excepciones [NullPointerException](https://rollbar.com/blog/how-to-catch-and-fix-nullpointerexception-in-java/#:~:text=NullPointerException%20is%20a%20runtime%20exception,refers%20to%20nothing%20or%20null%20.)
+
+```java
+Cipher cipher = Cipher.getInstance(algorithm);
+```
+
+Crea una instancia de la clase Cipher utilizando el algoritmo especificado (algorithm). 
+Cipher es la clase central en Java para realizar operaciones de cifrado y descifrado.
+
+```java
+byte[] bytes = Activity2Kt.fixedIV.getBytes(Charsets.UTF_8);
+```
+Obtiene un vector de inicialización (IV) fijo como arreglo de bytes en UTF-8. 
+El IV se utiliza junto con la clave para inicializar el objeto Cipher en algunos modos de cifrado como CBC (Cipher Block Chaining).
+
+![](/static/images/strings/10.png)
+
+
+```java
+IvParameterSpec ivSpec = new IvParameterSpec(bytes);
+```
+Aca se crea un objeto que encapsula IV.
+
+```java
+cipher.init(2, key, ivSpec);
+```
+Inicializa el objeto Cipher en modo de descifrado (Cipher.DECRYPT_MODE) con la clave secreta (key) y el IV (ivSpec) proporcionados.
+
+
+```java
+byte[] decodedCipherText = Base64.decode(cipherText, 0);
+byte[] decrypted = cipher.doFinal(decodedCipherText);
+Intrinsics.checkNotNull(decrypted);
+return new String(decrypted, Charsets.UTF_8);
+```
+
+Decodifica el texto cifrado (cipherText) desde Base64 a un arreglo de bytes (decodedCipherText).
+Ejecuta la operación de descifrado final sobre los datos decodificados, 
+produciendo el resultado descifrado en el arreglo de bytes decrypted.Por ultimo, lo retorna.
+
+
+```java:cd
+private final String cd() {
+    String str;
+    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+    String format = sdf.format(new Date());
+    Intrinsics.checkNotNullExpressionValue(format, "format(...)");
+    Activity2Kt.cu_d = format;
+    str = Activity2Kt.cu_d;
+    if (str != null) {
+        return str;
+    }
+    Intrinsics.throwUninitializedPropertyAccessException("cu_d");
+    return null;
+}
+```
+Devuelve una cadena de texto formateada con la fecha actual en el formato "dd/MM/yyyy".
+`Activity2Kt.cu_d = format` asigna el valor de format a la variable estática cu_d de la clase Activity2Kt. 
+Por ultimo se le asigna el valor de cu_d a la variable str y si no es nula se retorna.
+
+![](/static/images/strings/11.png)
+
+### 2.3.MainActivity
+
+El ultimo bloque de codigo que nos interesa se encuentra en MainActivity.
+
+![](/static/images/strings/12.png)
+
+```java
+public final void KLOW() {
+    SharedPreferences sharedPreferences = getSharedPreferences("DAD4", 0);
+    SharedPreferences.Editor editor = sharedPreferences.edit();
+    Intrinsics.checkNotNullExpressionValue(editor, "edit(...)");
+    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+    String cu_d = sdf.format(new Date());
+    editor.putString("UUU0133", cu_d);
+    editor.apply();
+}
+```
+
+```java
+SharedPreferences sharedPreferences = getSharedPreferences("DAD4", 0);
+SharedPreferences.Editor editor = sharedPreferences.edit();
+```
+Obtiene una instancia de SharedPreferences con el nombre "DAD4" y luego
+un editor de SharedPreferences para modificar las preferencias.
+
+```java
+SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+String cu_d = sdf.format(new Date());
+```
+
+Crea una instancia de SimpleDateFormat para formatear la fecha actual como "dd/MM/yyyy" y 
+guarda la fecha actual formateada como "dd/MM/yyyy" en `cu_d`.
+
+```java
+editor.putString("UUU0133", cu_d);
+editor.apply();
+```
+
+Por ultimo, guarda la fecha formateada en las SharedPreferences con la clave "UUU0133"
+y aplica los cambios en el editor.
+
+## 3.Resolucion
+
+#### 3.1 De atras hacia adelante
+
+```
+if (str.equals(ds)) {
+    System.loadLibrary("flag");
+    String s = getflag();
+    Toast.makeText(getApplicationContext(), s, 1).show();
+    return;
+```
+
+En este if, si el valor de `str` es igual al de `ds` se llama a la funcion getFlag.
+El valor de `ds` viene por medio de un intent con el scheme "mhl" y el host "labs",es el ultimo segmento de la ruta de la URI
+y asumimos que esta en formato base64 (por la lectura de codigo) y se lo convierte a cadena de texto.
+Osea que, tendriamos algo asi:
+
+```code
+mhl://labs/[ds]
+```
+
+No sabemos el valor de `ds`, pero si podemos conseguir el valor de `str` que es el que se pasa a la funcion `decrypt` y tenemos:
+- key = your_secret_key_1234567890123456
+- IV = 1234567890123456
+- Mode = CBC
+- ValorBase64 = bqGrDKdQ8zo26HflRsGvVA==
+
+Usando CyberChef podemos decifrar el valor.
+![](/static/images/strings/13.png)
+
+El valor de `ds` en cadena de caracteres es `mhl_secret_1337` y si lo codificamos en base64 queda `bWhsX3NlY3JldF8xMzM3`.
+![](/static/images/strings/14.png)
+
+```java
+mhl://labs/bWhsX3NlY3JldF8xMzM3
+```
+
+#### 3.2 KLOW()
+
+Este metodo no es llamado desde ningun lado del codigo, por ende, no se esta generando el objeto asociado al nombre `DAD4`
+que se espera obtener cuando se llama a la activity y que haga que los demas metodos e if se cumplan hasta llegar a getFlag().
+
+Para esta ocasion y poder obtener la flag, vamos a invocar el metodo KLOW() con Frida, por medio de un script y accediendo a la Activity2
+con la URI y adb para finalizar dumpeando la memoria y buscar la bandera.
+
+```javascript:Invoke.js
+Java.perform(function(){
+    setTimeout(function(){
+        Java.choose("com.mobilehackinglab.challenge.MainActivity", {
+            onMatch: function(instance){
+                instance.KLOW.implementation = function() {
+                    console.log("Llamada interceptada a KLOW()");
+                    this.KLOW();
+                };
+                instance.KLOW();
+                console.log("Invocado el método KLOW");
+            },
+            onComplete: function() {
+                console.log("Búsqueda completada");
+            }
+        });
+    }, 8000);
+});
+```
+Este codigo javascript utiliza la biblioteca de Frida para la instrumentacion dinamica de la aplicacion Strings.
+Espera 8 segundos después de iniciar la aplicación, busca instancias de la clase MainActivity, intercepta y redefine 
+la función KLOW() en cada instancia encontrada, imprime mensajes para indicar cuándo se intercepta y llama a KLOW(), 
+y finalmente imprime un mensaje cuando la búsqueda de instancias ha terminado.
+
+Este es el proceso entero que ejecutamos:
+![](/static/images/strings/flag.png)
+
+1. Ejecutamos Frida server desde nuestro host. (Anteriromente con `adb push frida-server /data/local/tmp/` coloque
+frida-server dentro del emulador)
+
+![](/static/images/strings/16.png)
+
+2. Dentro de las shared_prefs de la aplicacion, veo que aun no tengo ningun archivo generado.
+
+![](/static/images/strings/17.png)
+
+3. Con Frida inicio la app e inyecto y ejecuto el script que va a invocar a KLOW().
+
+```js
+frida -U -f com.mobilehackinglab.challenge -l invoque.js
+```
+
+![](/static/images/strings/18.png)
+
+4. Luego de invocar el metodo KLOW(), vemos como se genera un archivo en shared_prefs.
+![](/static/images/strings/19.png)
+
+5. Veo que se genero el archivo `DAD4.xml`.
+
+6. Dentro contiene el name `UUU0133`.
+
+7. Con el archivo ya generado, llamo a la Activity2 asi se ejecuta todo el bloque de codigo restante.
+
+```js 
+adb shell am start -W -a android.intent.action.VIEW -d "mhl://labs/bWhsX3NlY3JldF8xMzM3" -n com.mobilehackinglab.challenge/.Activity2
+```
+
+![](/static/images/strings/20.png)
+
+Por ultimo utilizo [Fridump](https://github.com/Nightbringer21/fridump) para volcar la memoria y encontrar la flag.
+
+![](/static/images/strings/15.png)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 -----
 
 ## Referencias
@@ -332,3 +606,8 @@ Los mensajes Toast son breves notificaciones visuales que aparecen temporalmente
 5. https://abhiandroid.com/programming/oncreate-activity-android.html#gsc.tab=0
 6. https://stackoverflow.com/questions/48122980/what-does-0-mean-in-getsharedpreferences
 7. https://stackoverflow.com/questions/39897378/what-does-the-number-mean-in-base64-encodetostringdata-number
+8. https://stackoverflow.com/questions/44782228/adb-launching-view-intent-from-adb-with-multiple-parameters-in-uri
+9. https://medium.com/@prnz_offl/dumping-android-application-memory-with-fridump-7adf2ca48fa3
+10. https://securitygrind.com/dumping-android-application-memory-with-fridump/
+11. https://labs.cognisys.group/posts/Writing-your-first-Frida-script-for-Android/
+12. https://frida.re/docs/javascript-api/#frida
