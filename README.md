@@ -12,8 +12,8 @@
 [![Github](https://img.shields.io/badge/GitHub-000000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/p314dO)
 [![Medium](https://img.shields.io/badge/Medium-000000?style=for-the-badge&logo=medium&logoColor=white)](https://medium.com/@nicol4sgula)
 [![Site](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://offensivemobile.vercel.app/)
-![Android](https://img.shields.io/badge/Android-000000?style=for-the-badge&logo=android&logoColor=white)
-![IOS](https://img.shields.io/badge/iOS-000000?style=for-the-badge&logo=ios&logoColor=white)
+[![Android](https://img.shields.io/badge/Android-000000?style=for-the-badge&logo=android&logoColor=white)](https://developer.android.com/studio?gad_source=1&gclid=CjwKCAjwnK60BhA9EiwAmpHZwzXccnYJt-g05C-Nfs0cHaxKKGrOdXR_NgGYhDjgXIUISDJFYENRkBoCaawQAvD_BwE&gclsrc=aw.ds)
+[![IOS](https://img.shields.io/badge/iOS-000000?style=for-the-badge&logo=ios&logoColor=white)](https://developer.apple.com/swift/)
 
 
 
