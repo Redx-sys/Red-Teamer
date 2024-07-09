@@ -23,9 +23,11 @@ The motivation behind this blog is to consolidate and share my ongoing learning 
 
 ## Posts In English 🇺🇸
 - [Strings](https://offensivemobile.vercel.app/blog/strings-en)
+- [Cyclic Scanner]()
 
 ## Posts En Castellano 🇺🇾
 - [Strings](https://offensivemobile.vercel.app/blog/strings-es)
+- [Cyclic Scanner]()
 
 ## Resources
 - [8ksec](https://8ksec.io/blog/)
@@ -38,3 +40,8 @@ The motivation behind this blog is to consolidate and share my ongoing learning 
 - [IOS Explotation/Security Research](https://www.youtube.com/playlist?list=PL-slHQxWd9GkhKu8oXXrIHFI_EoVHQqSA)
 - [IOS Reversing & Explotation ARM64](https://training.xintra.org/reversing-and-exploiting-ios-arm64)
 - [Mobile Hacking Lab](https://www.mobilehackinglab.com)
+
+## Tools
+- [Frida](https://frida.re/)
+- [Fridump](https://github.com/Nightbringer21/fridump)
+- [Pidcat](https://github.com/JakeWharton/pidcat)
