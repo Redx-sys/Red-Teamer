@@ -21,13 +21,9 @@
 
 The motivation behind this blog is to consolidate and share my ongoing learning journey in mobile application security, specifically from a red team perspective. Throughout my exploration of Android and iOS security, I've encountered numerous resources. While some are excellent, many only scratch the surface of what can be achieved or how to execute certain techniques effectively. This blog aims to fill that gap by compiling my discoveries, insights, and practical experiences into a single, comprehensive resource. By documenting and sharing my findings, I aim to contribute to the community and assist others in navigating the complexities of mobile application security testing and exploitation.
 
-## Posts In English 🇺🇸
+## Posts 🇺🇸🇺🇾
 - [Strings](https://offensivemobile.vercel.app/blog/strings-en)
-- [Cyclic Scanner]()
-
-## Posts En Castellano 🇺🇾
-- [Strings](https://offensivemobile.vercel.app/blog/strings-es)
-- [Cyclic Scanner]()
+- [Cyclic Scanner](https://offensivemobile.vercel.app/blog/mobile-hacking-lab/english/cyclic-scanner-es)
 
 ## Resources
 - [8ksec](https://8ksec.io/blog/)
@@ -42,6 +38,9 @@ The motivation behind this blog is to consolidate and share my ongoing learning 
 - [Mobile Hacking Lab](https://www.mobilehackinglab.com)
 
 ## Tools
+- [Android Studio](https://developer.android.com/studio?gad_source=1&gclid=CjwKCAjwnK60BhA9EiwAmpHZwxHHKh67WmgtXtL5YQDD5aZZCKIyQ8aC3Yl0iLYSrMDnz7Wh2zqN9RoC38wQAvD_BwE&gclsrc=aw.ds)
+- [APKTool](https://apktool.org/)
 - [Frida](https://frida.re/)
 - [Fridump](https://github.com/Nightbringer21/fridump)
+- [Jadx](https://github.com/skylot/jadx)
 - [Pidcat](https://github.com/JakeWharton/pidcat)
