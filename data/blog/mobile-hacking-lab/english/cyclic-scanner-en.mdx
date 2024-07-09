@@ -1,0 +1,147 @@
+---
+title: 'Cyclic Scanner'
+date: '2024-07-10'
+lastmod: '2023-08-05'
+tags: ['english', 'labs', 'mobile', 'android', 'mobilehackinglabs', 'logcat', 'RCE']
+draft: false
+summary: ' This laboratory practice is designed to simulate real-world scenarios where vulnerabilities within Android services lead to exploitable situations. Participants will have the opportunity to exploit these vulnerabilities to achieve Remote Code Execution (RCE) on an Android device.'
+images: ['/static/images/cyclic/cyclicscanner.png']
+---
+
+## Introduction
+
+![Cyclic Scanner logo](/static/images/cyclic/cyclicscanner.png)
+
+Cyclic Scanner is one of the laboratories from [MobileHackingLab](https://www.mobilehackinglab.com/link/gnVA9O), designed to simulate real-world scenarios where vulnerabilities within Android services lead to exploitable situations. Participants will have the opportunity to exploit these vulnerabilities to achieve Remote Code Execution (RCE) on an Android device.
+
+<TOCInline toc={props.toc} exclude="Introduction" />
+
+## 1. Extract and decompile the APK
+
+In this laboratory, we are given access to an Android device through [Corellium](https://www.corellium.com/solutions/mobile-app-pentesting), and to make it more manageable, I always download the APK to my host.
+
+```js
+shell:/$ pm path com.mobilehackinglab.cyclicscanner
+package:/data/app/~~qM4I86KbSswb6BplSzhL0A==/com.mobilehackinglab.cyclicscanner-rtyKTMCcoKLT7WV1i1hWWA==/base.apk
+^C
+adb pull /data/app/~~qM4I86KbSswb6BplSzhL0A==/com.mobilehackinglab.cyclicscanner-rtyKTMCcoKLT7WV1i1hWWA==/base.apk
+```
+
+Now, we extract the APK file into a directory and file structure using [APKTool](https://apktool.org/docs/the-basics/intro), which decompiles the file into its original components in readable format.
+
+```shell:Decompile
+apktool d APP.APK
+```
+## 2. Code Review
+### 2.1 AndroidManifest
+
+Starting with the analysis of the AndroidManifest, we can see that the app requests access to all files. This permission grants the application:
+- Read and write access to all shared storage files.
+- Access to the root directory of both USB On-The-Go (OTG) and SD card.
+- Write access to all internal storage directories except:
+  - `/Android/data/`
+  - `/sdcard/Android`
+  - Most subdirectories of `/sdcard/Android`.
+
+Additionally, the app will perform foreground tasks, which display a notification status bar when the app is executing a foreground task.
+
+![Image](/static/images/cyclic/2.png)
+
+Indeed, we need to grant permissions to the app when we first launch it.
+![Image](/static/images/cyclic/1.png)
+
+After granting permissions, we encounter a button to "Turn on a Scanner."
+![Image](/static/images/cyclic/3.png)
+
+Initially, upon activation, it doesn't appear that anything happens. However, checking Logcat in our Android Studio reveals that a file scan is indeed running.
+![Image](/static/images/cyclic/4.png)
+
+### 2.2 MainActivity
+
+At the end of `onCreate`, we observe the call to `setupPermissionLauncher()` method to handle the application permissions.
+![Image](/static/images/cyclic/10.png)
+
+After managing permissions and checking if the user triggered the button, the `ScanService` class is invoked.
+![Image](/static/images/cyclic/11.png)
+
+Inside the `ScanService` class, we find the `handleMessage` method.
+![Image](/static/images/cyclic/12.png)
+
+Upon dissecting it, we see that it performs actions previously observed in `Logcat`.
+
+```java
+System.out.println("starting file scan...");
+```
+Prints to console indicating the start of file scanning.
+
+```java
+File externalStorageDirectory = Environment.getExternalStorageDirectory();
+```
+Gets the external storage directory.
+
+```java
+Sequence $this$forEach$iv = FilesKt.walk$default(externalStorageDirectory, null, 1, null);
+for (Object element$iv : $this$forEach$iv) {
+    File file = (File) element$iv;
+...
+}
+```
+Uses `FilesKt.walk$default` function to obtain a sequence of files from the specified directory `(externalStorageDirectory)` and iterates through each element in the file sequence.
+
+```java
+if (file.canRead() && file.isFile()) {
+    System.out.print((Object) (file.getAbsolutePath() + "..."));
+    boolean safe = ScanEngine.INSTANCE.scanFile(file);
+    System.out.println((Object) (safe ? "SAFE" : "INFECTED"));
+}
+```
+Checks if the file is readable and is a file (not a directory).
+Uses `ScanEngine.INSTANCE.scanFile()` to detect if it's "SAFE" or "INFECTED".
+
+To understand more, we need to delve into the `ScanEngine` class.
+
+### 2.3 ScanEngine
+
+At the outset, we encounter `KNOWN_MALWARE_SAMPLE`, which contains names of files known as malware samples along with their unique identifiers (HASHES). This type of data structure is useful in security applications and antivirus software to compare scanned files with known malware samples and detect potential threats. It is known as "[signature-based antivirus](https://www.lenovo.com/us/en/glossary/what-is-virus-signature/?orgRef=https%253A%252F%252Fwww.google.com%252F)".
+![Image](/static/images/cyclic/13.png)
+
+ScanEngine scans a file using [toybox sha1sum](https://landley.net/toybox/help.html) to compute its SHA-1 hash and then verifies if it matches any of the malware samples stored in `KNOWN_MALWARE_SAMPLE`.
+![Image](/static/images/cyclic/14.png)
+
+The issue here is that it concatenates the file name without sanitizing it, potentially leading to code execution.
+![Image](/static/images/cyclic/15.png)
+
+The app will write to console:
+```java
+toybox sha1sum NAME_FILE.EXT
+```
+Since it does not sanitize the file name at any point, we could create a file named `file.txt; touch POC.txt; ping google.com` which, when read by the scanner, would execute code on the system.
+```java
+toybox sha1sum file.txt; touch POC.txt; ping google.com 
+```
+
+In Linux systems, `;` is a command separator. This means that after `;`, the commands following it will execute regardless of the success or failure of previous commands.
+
+> In this case, to mitigate these risks, it is crucial to have strict validation of valid characters in file names.
+
+## 3. Exploitation
+1. On my host, I create a file with command separators in the name to create a file named RCE.txt.
+![Image](/static/images/cyclic/5.png)
+2. I transfer it to the Documents folder on the memory card.
+![Image](/static/images/cyclic/6.png)
+
+3. The scanner detects it. If everything went well, it should have executed the command and created a file named RCE.txt.
+![Image](/static/images/cyclic/7.png)
+
+4. Command execution has occurred.
+![Image](/static/images/cyclic/8.png)
+
+---
+
+## References
+
+1. https://developer.android.com/training/data-storage/manage-all-files
+2. https://developer.android.com/develop/background-work/services/foreground-services
+3. https://developer.android.com/tools/logcat
+4. https://www.lenovo.com/us/en/glossary/what-is-virus-signature/?orgRef=https%253A%252F%252Fwww.google.com%252F
+5. https://www.bugcrowd.com/glossary/remote-code-execution-rce/
