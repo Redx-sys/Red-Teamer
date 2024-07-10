@@ -1,0 +1,76 @@
+---
+title: 'IOT Connect'
+date: '2024-07-12'
+lastmod: '2023-08-05'
+tags: ['spanish', 'labs', 'mobile', 'android', 'mobilehackinglabs', 'broadcast receiver']
+draft: false
+summary: 'En este laboratorio se nos proporciona una aplicacion de Android y el objetivo es encontrar una bandera. El formato tiene que ser `MHL{...}`. Para esto vamos a tener que realizar ingenieria inversa a la apk, identificar la actividad exportada, encontrar una manera de invocar la actividad y utlizar frida para escanear la memoria en busca de la bandera.'
+images: ['/static/images/iot-connect/']
+---
+
+## Introduccion
+
+![portada](/static/images/iot-connect/1.png)
+
+Este desafío te sumerge en el ámbito de la aplicación ficticia "IOT Connect", 
+destacando una falla de seguridad crítica relacionada con los `broadcast receivers`. 
+Esta falla presenta la oportunidad para que usuarios no autorizados activen el interruptor, 
+obteniendo control sobre todos los dispositivos conectados. 
+Su objetivo es manipular la funcionalidad del `broadcast receiver` enviando una transmisión 
+de manera que garantice que solo los usuarios autenticados puedan activar el interruptor. 
+
+<TOCInline toc={props.toc} exclude="Introduccion" />
+
+## 1.Extraer y decompilar la APK
+
+Ingresamos al dispositivo que se nos proporciona y para listar todos los paquetes de aplicaciones instaladas en 
+el dispositivo usamos `pm list packages`. Esta lista incluye tanto las aplicaciones del usuario como las del dispositivo. 
+Cada aplicacion en Android se identifica mediante un nombre de paquete unico que generalmente sigue el formato 
+**com.nombredeempresa.nombredeaplicacion**. Y como estamos buscando uno en particular. utilizamos grep para encontrar uno que diga 
+**_mobilehacking_**.
+
+```shell:ListarPaquetes
+pm list packages | grep mobilehacking
+```
+
+Para obtener la ruta completa donde se encuentra almacenado el archivo apk de la aplicacion utilizo `pm path com.mobilehacking.challenge`.
+
+```shell:RutaCompleta
+pm path com.mobilehackinglab.iotconnect
+```
+
+![portada](/static/images/iot-connect/2.png)
+
+Sabiendo la ruta donde se encuentra la aplicacion,procedemos a descargarla con `adb pull PATH_TO_APK`.
+Con este comando lo que hacemos es transferir el archivo apk desde el dispositivo Android a la computadora local.
+
+![portada](/static/images/iot-connect/3.png)
+
+
+Ahora descomprimimos el archivo APK en una estructura de directorios y archivos con [APKTool](https://apktool.org/docs/the-basics/intro), que descompila el archivo en sus componentes originales en formato legible. 
+
+```shell:Decompile
+apktool d APP.APK
+```
+
+## 2.Broadcast receiver
+Antes de sumergirnos en la aplicacion, la letra del desafio mensiona `broadcast receiver`. Pero que es?
+
+Un `broadcast receiver` es uno de los componentes de Android que permite a las aplicaciones escuchar
+y responder a mensajes de transmision de otras aplicaciones o del propio sistema. Son como oyentes
+que esperan que ocurran eventos especificos.
+El mensaje que se difundio (Broadcast Message) es un Intent. La `action` de ese `intent` identifica
+el evento que ocurrio,por ejemplo `android.intent.action.AIRPLANE_MODE` indica que el modo avion 
+esta activado.
+
+Para saber mas al respecto 
+
+
+
+
+
+
+
+---
+## Referencias
+1. https://medium.com/@khush.panchal123/understanding-broadcast-receivers-in-android-044fbfaa1330

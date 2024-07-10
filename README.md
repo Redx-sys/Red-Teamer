@@ -38,6 +38,7 @@ The motivation behind this blog is to consolidate and share my ongoing learning 
 - [Mobile Hacking Lab](https://www.mobilehackinglab.com)
 - [OWASP Mobile Application Security](https://mas.owasp.org/)
 - [OWASP Mobile Top 10](https://owasp.org/www-project-mobile-top-10/)
+- [The Mobile Attack Surface](https://engineering.mercari.com/en/blog/entry/20220729-the-mobile-attack-surface/)
 
 ## Labs
 - [Androgoat](https://github.com/satishpatnayak/AndroGoat)
