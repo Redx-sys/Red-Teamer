@@ -35,6 +35,8 @@ The motivation behind this blog is to consolidate and share my ongoing learning 
 - [IOS Explotation/Security Research](https://www.youtube.com/playlist?list=PL-slHQxWd9GkhKu8oXXrIHFI_EoVHQqSA)
 - [IOS Reversing & Explotation ARM64](https://training.xintra.org/reversing-and-exploiting-ios-arm64)
 - [Mobile Hacking Lab](https://www.mobilehackinglab.com)
+- [OWASP Mobile Application Security](https://mas.owasp.org/)
+- [OWASP Mobile Top 10](https://owasp.org/www-project-mobile-top-10/)
 
 ## Labs
 - [Androgoat](https://github.com/satishpatnayak/AndroGoat)
