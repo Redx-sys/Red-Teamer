@@ -30,6 +30,7 @@ The motivation behind this blog is to consolidate and share my ongoing learning 
 - [Android App Reverse Engineering 101](https://www.ragingrock.com/AndroidAppRE/)
 - [Android Offensive Security Blog](https://androidoffsec.withgoogle.com/)
 - [Azeria Labs](https://azeria-labs.com/writing-arm-assembly-part-1/)
+- [Blaze](https://www.blazeinfosec.com/services/penetration-testing/mobile-pentest/)
 - [HighAltitudesHack](https://highaltitudehacks.com/)
 - [Inversecos](https://www.inversecos.com/)
 - [IOS Explotation/Security Research](https://www.youtube.com/playlist?list=PL-slHQxWd9GkhKu8oXXrIHFI_EoVHQqSA)
