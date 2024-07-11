@@ -11,21 +11,24 @@ export default function Comments({ slug }: { slug: string }) {
   if (!siteMetadata.comments?.provider) {
     return null
   }
+
   return (
+    <>
       <Giscus
-      id="comments"
-      repo="p314dO/Offensive-Mobile"
-      repoId="R_kgDOMS5-NQ"
-      category="General"
-      categoryId="DIC_kwDOMS5-Nc4Cgtak"
-      mapping="pathname"
-      term="Welcome to @giscus/react component!"
-      reactionsEnabled="1"
-      emitMetadata="0"
-      inputPosition="top"
-      theme="dark"
-      lang="en"
-      loading="lazy"
-    />
+        id="comments"
+        repo="p314dO/Offensive-Mobile"
+        repoId="R_kgDOMS5-NQ"
+        category="General"
+        categoryId="DIC_kwDOMS5-Nc4Cgtak"
+        mapping="pathname"
+        term="Welcome to @giscus/react component!"
+        reactionsEnabled="1"
+        emitMetadata="0"
+        inputPosition="top"
+        theme="dark"
+        lang="en"
+        loading="lazy"
+      />
+    </>
   )
 }
