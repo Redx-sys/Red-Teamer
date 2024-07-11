@@ -1,5 +1,6 @@
 'use client'
-import Giscus from '@giscus/react';
+
+import Giscus from '@giscus/react'
 import { Comments as CommentsComponent } from 'pliny/comments'
 import { useState } from 'react'
 import siteMetadata from '@/data/siteMetadata'
