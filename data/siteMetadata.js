@@ -73,7 +73,7 @@ const siteMetadata = {
       // If the theme option above is set to 'custom`
       // please provide a link below to your custom theme css file.
       // example: https://giscus.app/themes/custom_example.css
-      themeURL: '',
+      themeURL: 'preferred_color_scheme',
       // This corresponds to the `data-lang="en"` in giscus's configurations
       lang: 'en',
     },
