@@ -13,7 +13,7 @@ export default function Comments({ slug }: { slug: string }) {
   }
   return (
     <>
-      <Giscus
+      {/* <Giscus
       id="comments"
       repo="p314dO/Offensive-Mobile"
       repoId="R_kgDOMS5-NQ"
@@ -27,7 +27,7 @@ export default function Comments({ slug }: { slug: string }) {
       theme="dark"
       lang="en"
       loading="lazy"
-    />
+    /> */}
     </>
   )
 }
