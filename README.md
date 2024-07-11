@@ -27,6 +27,7 @@ The motivation behind this blog is to consolidate and share my ongoing learning 
 
 ## Resources
 - [8ksec](https://8ksec.io/blog/)
+- [Android Hack - Black Belt Edition](https://www.udemy.com/course/android-app-hacking-black-belt-edition/?utm_source=adwords&utm_medium=udemyads&utm_campaign=LongTail_la.EN_cc.ROW&campaigntype=Search&portfolio=ROW-English&language=EN&product=Course&test=&audience=DSA&topic=&priority=&utm_content=deal4584&utm_term=_._ag_77879423894_._ad_535397245857_._kw__._de_c_._dm__._pl__._ti_dsa-1007766171032_._li_9069673_._pd__._&matchtype=&gad_source=1&gclid=EAIaIQobChMIysOqj8OfhwMVVCWtBh2gkQ7ZEAAYASAAEgJUfPD_BwE&couponCode=2021PM25)
 - [Android App Reverse Engineering 101](https://www.ragingrock.com/AndroidAppRE/)
 - [Android Offensive Security Blog](https://androidoffsec.withgoogle.com/)
 - [Azeria Labs](https://azeria-labs.com/writing-arm-assembly-part-1/)
@@ -45,6 +46,7 @@ The motivation behind this blog is to consolidate and share my ongoing learning 
 - [HackTheBox](https://app.hackthebox.com/tracks/Intro-to-Android-Exploitation)
 - [InsecureShop](https://www.insecureshopapp.com/)
 - [Mobile Hacking Lab](https://www.mobilehackinglab.com)
+- [Sieve](https://github.com/as0ler/Android-Examples/blob/master/sieve.apk)
 
 ## Tools
 - [Android Studio](https://developer.android.com/studio?gad_source=1&gclid=CjwKCAjwnK60BhA9EiwAmpHZwxHHKh67WmgtXtL5YQDD5aZZCKIyQ8aC3Yl0iLYSrMDnz7Wh2zqN9RoC38wQAvD_BwE&gclsrc=aw.ds)
