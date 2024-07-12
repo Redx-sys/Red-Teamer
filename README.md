@@ -33,6 +33,7 @@ The motivation behind this blog is to consolidate and share my ongoing learning 
 - [Azeria Labs](https://azeria-labs.com/writing-arm-assembly-part-1/)
 - [Blaze](https://www.blazeinfosec.com/services/penetration-testing/mobile-pentest/)
 - [HighAltitudesHack](https://highaltitudehacks.com/)
+- [Intro To Mobile Pentesting](https://www.hackthebox.com/blog/intro-to-mobile-pentesting)
 - [Inversecos](https://www.inversecos.com/)
 - [IOS Explotation/Security Research](https://www.youtube.com/playlist?list=PL-slHQxWd9GkhKu8oXXrIHFI_EoVHQqSA)
 - [IOS Reversing & Explotation ARM64](https://training.xintra.org/reversing-and-exploiting-ios-arm64)
