@@ -39,6 +39,10 @@ The motivation behind this blog is to consolidate and share my ongoing learning 
 - [IOS Reversing & Explotation ARM64](https://training.xintra.org/reversing-and-exploiting-ios-arm64)
 - [Mobile Hacking Lab](https://www.mobilehackinglab.com)
 - [OWASP Mobile Application Security](https://mas.owasp.org/)
+- [OWASP Mobile Application Security Checklist](https://mas.owasp.org/checklists/)
+- [OWASP MASTG - Mobile Application Security Testing Guide](https://mas.owasp.org/MASMASTG/)
+- [OWASP MASVS - Mobile Application Security Verification Standard](https://mas.owasp.org/MASVS/)
+- [OWASP MASWE - Mobile Application Security Weakness Enumeration](https://mas.owasp.org/MASWE/)
 - [OWASP Mobile Top 10](https://owasp.org/www-project-mobile-top-10/)
 - [The Mobile Attack Surface](https://engineering.mercari.com/en/blog/entry/20220729-the-mobile-attack-surface/)
 
