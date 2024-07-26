@@ -45,6 +45,7 @@ The motivation behind this blog is to consolidate and share my ongoing learning 
 - [OWASP MASWE - Mobile Application Security Weakness Enumeration](https://mas.owasp.org/MASWE/)
 - [OWASP Mobile Top 10](https://owasp.org/www-project-mobile-top-10/)
 - [The Mobile Attack Surface](https://engineering.mercari.com/en/blog/entry/20220729-the-mobile-attack-surface/)
+- [What is SSL Pinning](https://www.indusface.com/learning/what-is-ssl-pinning-a-quick-walk-through/)
 
 ## Labs
 - [Androgoat](https://github.com/satishpatnayak/AndroGoat)
