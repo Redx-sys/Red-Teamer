@@ -1,9 +1,88 @@
 ---
 title: Schooled
-date: '2023-07-07'
+date: '2023-10-09'
 lastmod: '2023-08-05'
 tags: ['labs', 'HackTheBox']
 draft: true
 summary: 'Lame is a beginner-level machine that only requires one exploit to gain root access. It was the first machine published on Hack The Box and is often the first machine for new users.'
 images: ['/static/images/htb/lame/Lame.png']
 ---
+
+![Portada](/static/images/htb/schooled/schooled.png)
+
+{' '}
+<br></br>
+
+<TOCInline toc={props.toc} exclude="Introduccion" />
+
+## RECONOCIMIENTO
+
+### Ping
+
+Primero que nada verificamos estar en la misma red que la maquina victima enviandole un paquete de datos a la ip 10.10.10.234 con el comando ping.
+
+```js
+  ping -c 4 10.10.10.234
+```
+
+- `-c` : Cantidad de paquetes de solicitud de eco ICMP (Internet Control Message Protocol) que se enviaran.
+
+![Ping](/static/images/htb/schooled/1.png)
+
+### Nmap
+
+Luego, realizamos el escaneo de puertos.
+
+```js
+  nmap -sV -p- --open 10.10.10.234 --min-rate 5000
+```
+
+- `-p-` : Escanea todos los puertos.
+- `--open` : Solo va a reportar los puertos que encuentre abiertos.
+- `-sV` : Nos da informacion acerca de la version que estan utilizando.
+- `--min-rate 5000` : Envia un minimo de 5000 paquetes por segundo.
+
+![Nmap1](/static/images/htb/schooled/2.png)
+
+### Puertos abiertos
+
+| Puertos abiertos | Servicio | Version                                    |
+| ---------------- | -------- | ------------------------------------------ |
+| **_22/tcp_**     | SSH      | Open SSH 7.9 (FreeBSD 20200214)            |
+| **_80/tcp_**     | http     | Apache httpd 2.4.46 ((FreeBSD) PHP/7.4.15) |
+
+## ENUMERACION
+
+### Puerto 80 - HTTP
+
+![Nmap1](/static/images/htb/schooled/4.png)
+Al tener el puerto 80 abierto, ponemos la IP dada en la URL del navegador y tenemos acceso a uuna pagina web educativa.
+Luego de revisar de arriba abajo, lo unico util que encontramos son los nombres de los profesores que trabajan alli y un mail.
+
+![Nmap1](/static/images/htb/schooled/3.png)
+![Nmap1](/static/images/htb/schooled/5.png)
+
+Utilizo gobuster para enumerar directorios y tampoco encuentro nada interesante.
+
+![Nmap1](/static/images/htb/schooled/6.png)
+
+Ahora utilizo ffuf para encontrar virtual hosts, y encuentro que tienen un moodle.
+![Nmap1](/static/images/htb/schooled/7.png)
+
+Como a simple vista no dice la version de moodle que es, puedo aprovechar que es un proyecto de codigo abierto que se encuentra en github,para enumerar posibles directorios donde encuentre informacion al respecto.
+
+![Nmap1](/static/images/htb/schooled/8.png)
+![Nmap1](/static/images/htb/schooled/9.png)
+![Nmap1](/static/images/htb/schooled/10.png)
+
+La version de moodle es la 3.9 . Ya con esa info, podemos recolectar mas informacion acerca de vulnerabilidades asociadas a esta version en particular.  
+Haciendo una busqueda por google encontramos [este repositorio](https://github.com/HoangKien1020/CVE-2020-25627) el cual tiene un PoC de un Cross-Site Scripting alojado en un parametro del perfil del usuario.
+Ademas, otro [repositorio](https://github.com/lanzt/CVE-2020-14321) con otro PoC de una escalada de privilegios del rol de profesor a manager, obteniendo luego ejecucion de codigo remoto.
+
+Con estas PoC en mano, el plan seria : robar las cookies del profesor del curso de Matematicas, el cual es el unico
+curso al que tenemos acceso, y es el profe que mira los perfiles de todos los alumnos que se anotan como dice en uno de sus anuncios.
+
+![Nmap1](/static/images/htb/schooled/11.png)
+
+Con el Cross-Site Scripting alojado robamos sus cookies, realizamos un Session Hijacking, y con la cuenta de profesor en nuestras manos, pasamos a escalar privilegios para luego subir un plugin de moodle malicioso
+que nos permita ejecutar codigo remoto.

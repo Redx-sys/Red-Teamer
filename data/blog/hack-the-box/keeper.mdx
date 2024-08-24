@@ -1,9 +1,146 @@
 ---
 title: Keeper
-date: '2023-07-07'
+date: '2024-02-10'
 lastmod: '2023-08-05'
 tags: ['labs', 'HackTheBox']
-draft: true
+draft: false
 summary: 'Lame is a beginner-level machine that only requires one exploit to gain root access. It was the first machine published on Hack The Box and is often the first machine for new users.'
-images: ['/static/images/htb/lame/Lame.png']
+images: ['/static/images/htb/leeper/keeper.png']
 ---
+
+![Portada](/static/images/htb/keeper/logo.png)
+
+<TOCInline toc={props.toc} exclude="Introduccion" />
+
+## Reconnaissance
+
+### Ping
+
+First of all, we verify that we are on the same network as the victim machine by sending a data packet to the IP 10.10.11.227 using ping command
+
+```js
+ping -c 4 10.10.11.227
+```
+
+- `-c 4` : The number of ICMP(Internet Control Message Protocol) echo request packets to be sent.
+
+![Ping](/static/images/htb/keeper/1.png)
+
+### Nmap
+
+Then,we perform the port scanning.
+
+```js
+nmap -p- --open --min-rate 10000 10.10.11.227 -oN open_ports
+```
+
+![Nmap1](/static/images/htb/keeper/2.png)
+
+- `-p-` : Scan all ports.
+- `--open` : It will only report the ports it finds open.
+- `--min-rate 10000` : Send packets at a minimum rate of 10,000 packets per second.
+- `-oN` : Requests that normal output be directed to the given filename.
+
+When obtaining the list of open ports on the victim machine,we perform another scan but only on those that Nmap reported as open, including the following flags:
+
+- `-sC` : Activates scanning using default service enumeration and detection scripts. The scripts are run against open ports to gather additional information about the services running.
+- `-sV` :Performs version detection of services found on the open ports. Nmap attempts to determine the version and type of service using various methods, such as sending specific requests and comparing the received responses.
+- `-p` : Specifies the ports to be scanned. In this case, ports 22 (SSH), 80 (HTTP) are being scanned.
+
+![Nmap2](/static/images/htb/keeper/3.png)
+
+### Open Ports
+
+| Port         | Service | Version       |
+| ------------ | ------- | ------------- |
+| **_22/tcp_** | SSH     | OpenSSH 8.9p1 |
+| **_80/tcp_** | http    | Nginx 1.18.0  |
+
+## Enumeration
+
+### Port 80 - Http
+
+We navigate to the provided IP and find a link on the website that directs us to tickets.keeper.htb.
+
+![Web](/static/images/htb/keeper/4.png)
+
+We add the names to /etc/hosts.
+
+```js
+sudo echo "10.10.11.227 keeper.htb tickets.keeper.htb" >> /etc/hosts
+```
+
+We have reached a Request Tracker login page.
+
+![Web](/static/images/htb/keeper/5.png)
+
+Searching on the web, we found that Request Tracker is [an open source tool for organizations of all sizes to track and manage workflows, customer requests, and internal project tasks of all sorts](https://en.wikipedia.org/wiki/Request_Tracker).
+
+I'm searching to see if the application handles default credentials.
+
+![Web](/static/images/htb/keeper/6.png)
+![Web](/static/images/htb/keeper/7.png)
+And we have access to the application.
+![Web](/static/images/htb/keeper/8.png)
+
+While exploring the application, we found data about another user.
+
+![Web](/static/images/htb/keeper/9.png)
+
+When we navigate to the user data page, we come across some credentials.
+
+![Web](/static/images/htb/keeper/10.png)
+![Web](/static/images/htb/keeper/11.png)
+
+We use the password and username, and we gain access to the machine via SSH.
+
+![Web](/static/images/htb/keeper/12.png)
+
+We find the user.txt file.
+
+![Web](/static/images/htb/keeper/13.png)
+
+### Privilege Escalation
+
+Next to the user.txt, we find a zip file. Inside have two files, KeePassDumpFull.dmp and passcodes.kdbx.
+
+![Web](/static/images/htb/keeper/14.png)
+![Web](/static/images/htb/keeper/15.png)
+
+Searching about Keepass, we come across this information and a Proof of Concept (PoC).
+
+[KeePass exploit helps retrieve cleartext master password, fix coming soon](https://www.bleepingcomputer.com/news/security/keepass-exploit-helps-retrieve-cleartext-master-password-fix-coming-soon/)
+
+[PoC](https://github.com/vdohney/keepass-password-dumper)
+
+I'll pass them to my machine to work with them.
+
+![Web](/static/images/htb/keeper/16.png)
+
+![Web](/static/images/htb/keeper/17.png)
+
+![Web](/static/images/htb/keeper/18.png)
+
+[This another Poc](https://github.com/z-jxy/keepass_dump) works very well for me.
+
+![Web](/static/images/htb/keeper/19.png)
+
+![Web](/static/images/htb/keeper/20.png)
+
+I obtain the password like this to be able to see what is in passcodes.kdbx.
+![Web](/static/images/htb/keeper/21.png)
+
+Now we have a PuTTY SSH user key file. It is a file that contains a private key used to authenticate to an SSH server using the PuTTY client.
+![Web](/static/images/htb/keeper/22.png)
+![Web](/static/images/htb/keeper/23.png)
+
+This command uses the `puttygen` tool to convert a text file (`file.txt`) into a private key in OpenSSH format (`private-openssh`) and then saves the generated key to a file named `clave-openssh`.
+
+```js
+puttygen file.txt -O private-openssh -o clave-openssh
+```
+
+![Web](/static/images/htb/keeper/24.png)
+
+We connect via SSH and thus obtain the root.txt.
+![Web](/static/images/htb/keeper/25.png)

