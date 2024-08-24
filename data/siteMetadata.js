@@ -1,9 +1,10 @@
 /** @type {import("pliny/config").PlinyConfig } */
 const siteMetadata = {
-  title: 'Offensive Mobile',
+  title: 'Offensive Blog',
   author: 'Nicolas Gula',
   headerTitle: '',
-  description: 'A blog created to learn Android & IOS Offensive Security',
+  description:
+    ' Tu guía en pentesting web y hacking de entornos empresariales. Aprende con writeups de HTB, Portswigger, técnicas de ataque en Active Directory (PROXIMAMENTE), y análisis de ataques y vulnerabilidades para mejorar tus habilidades de seguridad ofensiva.',
   language: 'en-us',
   theme: 'system', // system, dark or light
   siteUrl: 'https://offensivemobile.vercel.app',
