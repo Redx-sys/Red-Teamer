@@ -2,7 +2,17 @@
 title: 'Pinned'
 date: '2024-07-12'
 lastmod: '2023-08-05'
-tags: ['spanish', 'labs', 'mobile', 'android', 'HackTheBox', 'IntroToAndroidExplotation', 'SSLPinning', 'Frida']
+tags:
+  [
+    'spanish',
+    'labs',
+    'mobile',
+    'android',
+    'HackTheBox',
+    'IntroToAndroidExplotation',
+    'SSLPinning',
+    'Frida',
+  ]
 draft: false
 summary: 'Esta aplicación ha almacenado mis credenciales y sólo puedo iniciar sesión automáticamente. He intentado interceptar la solicitud de inicio de sesión y restaurar mi contraseña, pero parece que se trata de una conexión segura. ¿Puedes ayudarme a saltarme esta restricción de seguridad e interceptar la contraseña en texto plano?'
 images: ['/static/images/htb/pinned/pinned.png']
@@ -14,7 +24,6 @@ Este es el primer post de la serie [Intro To Android Explotation](https://app.ha
 que se encuentra en HackTheBox. Hoy comenzaremos con `Pinned`.
 
 ![logo strings](/static/images/htb/pinned/pinned.png)
-
 
 <TOCInline toc={props.toc} exclude="Introduccion" />
 
@@ -55,25 +64,26 @@ Esto significa que se esta utilizando SSL Pinning.
 ## 4. SSL Pinning
 
 ### 4.2.¿Que es?
-SSL Pinning es una técnica de seguridad utilizada en aplicaciones móviles 
-(y también en otras aplicaciones) para prevenir ataques de intermediarios, 
-como los ataques Man-In-The-Middle (MITM). Su objetivo es asegurar que una 
-aplicación se comunique únicamente con un servidor específico mediante el 
+
+SSL Pinning es una técnica de seguridad utilizada en aplicaciones móviles
+(y también en otras aplicaciones) para prevenir ataques de intermediarios,
+como los ataques Man-In-The-Middle (MITM). Su objetivo es asegurar que una
+aplicación se comunique únicamente con un servidor específico mediante el
 uso de certificados digitales.
-Pinning es la técnica de "anclaje" de un certificado específico o una clave 
-pública en el código de la aplicación para garantizar que sólo el servidor 
-con ese certificado puede ser contactado. 
+Pinning es la técnica de "anclaje" de un certificado específico o una clave
+pública en el código de la aplicación para garantizar que sólo el servidor
+con ese certificado puede ser contactado.
 Si el certificado cambia o se usa otro, la conexión se bloquea.
 
 ### 4.1.¿Cómo funciona?
 
-La aplicación almacena el certificado del servidor o una lista de certificados confiables, o alternativamente, 
-la huella digital (fingerprint) del certificado, que es un hash único. Al intentar establecer una conexión HTTPS 
-con un servidor, este presenta su [certificado SSL/TLS](https://www.youtube.com/watch?v=6HJAWFenYx8). 
-La aplicación compara el certificado presentado por el servidor con el certificado almacenado (o su huella digital). 
-Si coinciden, la conexión se considera segura y se permite; si no coinciden, la conexión se rechaza, ayudando 
-a prevenir ataques de intermediarios (MITM) que utilizan certificados falsos. Esto mejora la seguridad al 
-garantizar que la aplicación se comunique solo con servidores de confianza y mitiga el riesgo de ataques MITM. 
+La aplicación almacena el certificado del servidor o una lista de certificados confiables, o alternativamente,
+la huella digital (fingerprint) del certificado, que es un hash único. Al intentar establecer una conexión HTTPS
+con un servidor, este presenta su [certificado SSL/TLS](https://www.youtube.com/watch?v=6HJAWFenYx8).
+La aplicación compara el certificado presentado por el servidor con el certificado almacenado (o su huella digital).
+Si coinciden, la conexión se considera segura y se permite; si no coinciden, la conexión se rechaza, ayudando
+a prevenir ataques de intermediarios (MITM) que utilizan certificados falsos. Esto mejora la seguridad al
+garantizar que la aplicación se comunique solo con servidores de confianza y mitiga el riesgo de ataques MITM.
 Sin embargo, el SSL pinning requiere actualizar la aplicación si el certificado del servidor cambia.
 
 ## 5.SSL Pinning Bypass
@@ -83,20 +93,24 @@ Primero nos generamos un nuevo certificado en Burpsuite y lo importamos a nuestr
 
 ![logo strings](/static/images/htb/pinned/12.png)
 Elegimos el formato DER y lo guardamos con la extension `.crt`.
+
 ```shell
 cert-der.crt
 ```
+
 Luego lo agregamos a un directorio en el emulador/dispositivo con adb.
 
 ```js
 adb push cert-der.crt /data/local/tmp
 ```
+
 Ahora necesitamos usar Frida.
 
 ### 5.1.Frida
 
 Frida es un [Kit de herramientas de instrumentación dinámica para desarrolladores, ingeniería inversa e investigadores de seguridad ](https://frida.re/).
 En esta ocasion vamos a utilizar:
+
 - [Frida Server](https://github.com/frida/frida/releases)
 - [Universal Android SSL Pinning Bypass with Frida](https://codeshare.frida.re/@pcipolloni/universal-android-ssl-pinning-bypass-with-frida/)
 - [Frida Tools](https://github.com/frida/frida-tools)
@@ -104,8 +118,8 @@ En esta ocasion vamos a utilizar:
 Frida Server se ejecuta en el dispositivo de destino y nos permite realizar tareas. Como inyectar scripts de javascript en procesos
 de ejecucion para inspeccionar, modificar y manipular su comportamiento. Es muy util para al analisis de aplicaciones moviles,
 eludir tecnicas de proteccion como SSL pinning, detectar llamadas a funciones especificas y modificar el comportamiento de las apps.
-Una vez que Frida Server está en ejecución en el dispositivo, podemos conectar el cliente Frida desde la maquina atacante para 
-interactuar con el proceso de la aplicación. 
+Una vez que Frida Server está en ejecución en el dispositivo, podemos conectar el cliente Frida desde la maquina atacante para
+interactuar con el proceso de la aplicación.
 
 Descargamos [Frida Server](https://github.com/frida/frida/releases) y lo colocamos en el mismo directorio que al certificado.
 
@@ -117,8 +131,8 @@ adb push frida-server /data/local/tmp
 Debemos instalar Frida-Tools para poder interactuar con Frida-Server. Es MUY importante que tanto Frida Tools como Frida Server sean la misma version
 si no, no funcionara. Aca un [video](https://www.youtube.com/watch?v=V2iyVJkyqRg) de como instalarlo.
 
-Por ultimo, tambien debemos tener descargado el [script](https://codeshare.frida.re/@pcipolloni/universal-android-ssl-pinning-bypass-with-frida/) 
-que nos permite bypassear el SSL Pinning. 
+Por ultimo, tambien debemos tener descargado el [script](https://codeshare.frida.re/@pcipolloni/universal-android-ssl-pinning-bypass-with-frida/)
+que nos permite bypassear el SSL Pinning.
 
 ```js
 /* 
@@ -132,61 +146,70 @@ que nos permite bypassear el SSL Pinning.
    UPDATE 20191605: Fixed undeclared var. Thanks to @oleavr and @ehsanpc9999 !
 */
 
-setTimeout(function(){
-    Java.perform(function (){
-    	console.log("");
-	    console.log("[.] Cert Pinning Bypass/Re-Pinning");
+setTimeout(function () {
+  Java.perform(function () {
+    console.log('')
+    console.log('[.] Cert Pinning Bypass/Re-Pinning')
 
-	    var CertificateFactory = Java.use("java.security.cert.CertificateFactory");
-	    var FileInputStream = Java.use("java.io.FileInputStream");
-	    var BufferedInputStream = Java.use("java.io.BufferedInputStream");
-	    var X509Certificate = Java.use("java.security.cert.X509Certificate");
-	    var KeyStore = Java.use("java.security.KeyStore");
-	    var TrustManagerFactory = Java.use("javax.net.ssl.TrustManagerFactory");
-	    var SSLContext = Java.use("javax.net.ssl.SSLContext");
+    var CertificateFactory = Java.use('java.security.cert.CertificateFactory')
+    var FileInputStream = Java.use('java.io.FileInputStream')
+    var BufferedInputStream = Java.use('java.io.BufferedInputStream')
+    var X509Certificate = Java.use('java.security.cert.X509Certificate')
+    var KeyStore = Java.use('java.security.KeyStore')
+    var TrustManagerFactory = Java.use('javax.net.ssl.TrustManagerFactory')
+    var SSLContext = Java.use('javax.net.ssl.SSLContext')
 
-	    // Load CAs from an InputStream
-	    console.log("[+] Loading our CA...")
-	    var cf = CertificateFactory.getInstance("X.509");
-	    
-	    try {
-	    	var fileInputStream = FileInputStream.$new("/data/local/tmp/cert-der.crt");
-	    }
-	    catch(err) {
-	    	console.log("[o] " + err);
-	    }
-	    
-	    var bufferedInputStream = BufferedInputStream.$new(fileInputStream);
-	  	var ca = cf.generateCertificate(bufferedInputStream);
-	    bufferedInputStream.close();
+    // Load CAs from an InputStream
+    console.log('[+] Loading our CA...')
+    var cf = CertificateFactory.getInstance('X.509')
 
-		var certInfo = Java.cast(ca, X509Certificate);
-	    console.log("[o] Our CA Info: " + certInfo.getSubjectDN());
+    try {
+      var fileInputStream = FileInputStream.$new('/data/local/tmp/cert-der.crt')
+    } catch (err) {
+      console.log('[o] ' + err)
+    }
 
-	    // Create a KeyStore containing our trusted CAs
-	    console.log("[+] Creating a KeyStore for our CA...");
-	    var keyStoreType = KeyStore.getDefaultType();
-	    var keyStore = KeyStore.getInstance(keyStoreType);
-	    keyStore.load(null, null);
-	    keyStore.setCertificateEntry("ca", ca);
-	    
-	    // Create a TrustManager that trusts the CAs in our KeyStore
-	    console.log("[+] Creating a TrustManager that trusts the CA in our KeyStore...");
-	    var tmfAlgorithm = TrustManagerFactory.getDefaultAlgorithm();
-	    var tmf = TrustManagerFactory.getInstance(tmfAlgorithm);
-	    tmf.init(keyStore);
-	    console.log("[+] Our TrustManager is ready...");
+    var bufferedInputStream = BufferedInputStream.$new(fileInputStream)
+    var ca = cf.generateCertificate(bufferedInputStream)
+    bufferedInputStream.close()
 
-	    console.log("[+] Hijacking SSLContext methods now...")
-	    console.log("[-] Waiting for the app to invoke SSLContext.init()...")
+    var certInfo = Java.cast(ca, X509Certificate)
+    console.log('[o] Our CA Info: ' + certInfo.getSubjectDN())
 
-	   	SSLContext.init.overload("[Ljavax.net.ssl.KeyManager;", "[Ljavax.net.ssl.TrustManager;", "java.security.SecureRandom").implementation = function(a,b,c) {
-	   		console.log("[o] App invoked javax.net.ssl.SSLContext.init...");
-	   		SSLContext.init.overload("[Ljavax.net.ssl.KeyManager;", "[Ljavax.net.ssl.TrustManager;", "java.security.SecureRandom").call(this, a, tmf.getTrustManagers(), c);
-	   		console.log("[+] SSLContext initialized with our custom TrustManager!");
-	   	}
-    });
-},0);
+    // Create a KeyStore containing our trusted CAs
+    console.log('[+] Creating a KeyStore for our CA...')
+    var keyStoreType = KeyStore.getDefaultType()
+    var keyStore = KeyStore.getInstance(keyStoreType)
+    keyStore.load(null, null)
+    keyStore.setCertificateEntry('ca', ca)
+
+    // Create a TrustManager that trusts the CAs in our KeyStore
+    console.log('[+] Creating a TrustManager that trusts the CA in our KeyStore...')
+    var tmfAlgorithm = TrustManagerFactory.getDefaultAlgorithm()
+    var tmf = TrustManagerFactory.getInstance(tmfAlgorithm)
+    tmf.init(keyStore)
+    console.log('[+] Our TrustManager is ready...')
+
+    console.log('[+] Hijacking SSLContext methods now...')
+    console.log('[-] Waiting for the app to invoke SSLContext.init()...')
+
+    SSLContext.init.overload(
+      '[Ljavax.net.ssl.KeyManager;',
+      '[Ljavax.net.ssl.TrustManager;',
+      'java.security.SecureRandom'
+    ).implementation = function (a, b, c) {
+      console.log('[o] App invoked javax.net.ssl.SSLContext.init...')
+      SSLContext.init
+        .overload(
+          '[Ljavax.net.ssl.KeyManager;',
+          '[Ljavax.net.ssl.TrustManager;',
+          'java.security.SecureRandom'
+        )
+        .call(this, a, tmf.getTrustManagers(), c)
+      console.log('[+] SSLContext initialized with our custom TrustManager!')
+    }
+  })
+}, 0)
 ```
 
 ### 5.2.Bypassing
@@ -197,21 +220,23 @@ Con todo nuestro kit preparado ya podemos comenzar. Con Frida Server ya dentro d
 adb shell chmod 755 frida-server
 adb shell "/data/local/tmp/frida-server &"
 ```
+
 ![logo strings](/static/images/htb/pinned/6.png)
 
 Luego enumeramos los procesos que se estan ejecutando en el dispositivo con `frida-ps -U`.
 ![logo strings](/static/images/htb/pinned/7.png)
 
-Ahora que tenemos identificado el paquete (`com.example.pinned`) pasamos a iniciar la aplicacion y luego inyectar el script 
+Ahora que tenemos identificado el paquete (`com.example.pinned`) pasamos a iniciar la aplicacion y luego inyectar el script
 para eludir la verificacion de SSL Pinning.
 
 ```js
 frida -U -f com.example.pinned -l frida-android-repinning.js
 ```
+
 - `U`: Indica que el dispositivo objetivo está conectado a través de USB.
-- `f com.example.APP`: Especifica la aplicación objetivo que deseas lanzar. 
-- `l frida-android-repinning.js`: Especifica el script de Frida que deseas cargar y ejecutar dentro del contexto de la 
-aplicación. 
+- `f com.example.APP`: Especifica la aplicación objetivo que deseas lanzar.
+- `l frida-android-repinning.js`: Especifica el script de Frida que deseas cargar y ejecutar dentro del contexto de la
+  aplicación.
 
 ![logo strings](/static/images/htb/pinned/8.png)
 
