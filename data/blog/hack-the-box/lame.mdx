@@ -4,7 +4,7 @@ date: '2023-07-07'
 lastmod: '2023-08-05'
 tags: ['labs', 'HackTheBox']
 draft: false
-summary: 'Lame is a beginner-level machine that only requires one exploit to gain root access. It was the first machine published on Hack The Box and is often the first machine for new users.'
+summary: 'Lame es una máquina de nivel principiante que solo requiere un exploit para obtener acceso root. Fue la primera máquina publicada en Hack The Box y a menudo es la primera máquina para nuevos usuarios.'
 images: ['/static/images/htb/lame/Lame.png']
 ---
 
@@ -18,19 +18,19 @@ images: ['/static/images/htb/lame/Lame.png']
 
 ### Ping
 
-First of all, we verify that we are on the same network as the victim machine by sending a data packet to the IP 10.10.10.3 using the ping command.
+Primero, verificamos que estamos en la misma red que la máquina víctima enviando un paquete de datos a la IP 10.10.10.3 usando el comando ping.
 
 ```js
   ping -c 4 10.10.10.3
 ```
 
-- `-c` : Number of ICMP (Internet Control Message Protocol) echo request packets that will be sent.
+- `-c` : Número de paquetes de solicitud de eco ICMP (Internet Control Message Protocol) que se enviarán..
 
 ![Ping](/static/images/htb/Lame/ping.png)
 
 ### Nmap
 
-Then, we perform the port scan.
+Luego, realizamos el escaneo de puertos.
 
 ```js
   nmap -p- --open 10.10.10.3 -Pn
