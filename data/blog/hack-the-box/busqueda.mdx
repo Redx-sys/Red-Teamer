@@ -5,7 +5,7 @@ lastmod: '2023-08-05'
 tags:
   ['labs', 'HackTheBox', 'Code Injection', 'Harcoded Credentials', 'RCE', 'Searchor 2.4.0', 'Flask']
 draft: false
-summary: 'Busqueda es una maquina sencilla en la cual debemos explotar la vulnerabilidad de Searchor 2.4.0 para una vez dentro ingeniarnosla y escalar privilegios'
+summary: 'Busqueda es una máquina Linux de dificultad fácil que implica explotar una vulnerabilidad de inyección de comandos presente en un módulo "Python". Al aprovechar esta vulnerabilidad, obtenemos acceso a nivel de usuario a la máquina. Para escalar privilegios a "root", descubrimos credenciales dentro de un archivo de configuración "Git", lo que nos permite iniciar sesión en un servicio local "Gitea". Además, descubrimos que un usuario específico puede ejecutar un script de verificación del sistema con privilegios de "root". Al utilizar este script, enumeramos los contenedores "Docker" que revelan las credenciales de la cuenta "Gitea" del usuario "administrador". Un análisis más profundo del código fuente del script de verificación del sistema en un repositorio `Git` revela un medio para explotar una referencia de ruta relativa, otorgándonos ejecución remota de código (RCE) con privilegios de `root`. '
 images: ['/static/images/htb/busqueda/busqueda.png']
 ---
 

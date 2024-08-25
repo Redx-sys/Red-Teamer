@@ -1,0 +1,147 @@
+---
+title: Divulgacion de informacion
+date: '2024-05-10'
+lastmod: '2023-08-05'
+tags: ['Portswigger', 'Information Disclosure', 'Labs']
+draft: false
+summary: 'La divulgación de información, también conocida como fuga de información, ocurre cuando un sitio web revela de manera involuntaria información sensible a sus usuarios.'
+images: ['/static/images/htb/ewpt']
+---
+
+<p align="center">
+  ![Portada](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/Designer.png)
+</p>
+
+<TOCInline toc={props.toc} exclude="Introduccion" />
+
+## ¿Qué es la divulgación de información?
+
+La divulgación de información, también conocida como fuga de información, ocurre cuando un sitio web revela de manera involuntaria información sensible a sus usuarios. Esto puede exponer datos a posibles atacantes, incluyendo:
+
+- Datos sobre otros usuarios, como nombres de usuario o información financiera
+- Datos comerciales o empresariales sensibles
+- Detalles técnicos sobre el sitio web y su infraestructura
+
+## Ejemplos básicos de divulgación de información
+
+- **Directorios ocultos**: Revelar nombres, estructura y contenidos de directorios ocultos a través de archivos `robots.txt` o listados de directorios.
+- **Exposición de código fuente**: Proveer acceso a archivos de código fuente a través de copias de seguridad temporales.
+- **Mensajes de error**: Mencionar explícitamente nombres de tablas o columnas de bases de datos en los mensajes de error.
+- **Información sensible**: Exponer innecesariamente información altamente sensible, como detalles de tarjetas de crédito.
+- **Secretos codificados**: Codificar en el código fuente claves API, direcciones IP y credenciales de bases de datos.
+- **Comportamiento de la aplicación**: Indicar la existencia o ausencia de recursos o nombres de usuario a través de diferencias sutiles en el comportamiento de la aplicación.
+
+## Cómo encontrar y explotar vulnerabilidades de divulgación de información
+
+- **Fuzzing**: Enviar entradas aleatorias o inesperadas a la aplicación para descubrir cómo maneja diferentes tipos de datos.
+- **Uso de Burp Scanner**: Herramienta automatizada para escanear vulnerabilidades, incluyendo divulgación de información.
+- **Uso de las herramientas de compromiso de Burp**: Herramientas dentro de Burp Suite que ayudan a identificar y explotar vulnerabilidades de divulgación de información.
+- **Ingeniería de respuestas informativas**: Crear entradas que provoquen mensajes de error u otras respuestas que revelen información útil.
+
+## Mensajes de error
+
+El contenido de los mensajes de error puede ser particularmente revelador. Pueden indicar qué tipo de entrada o datos se esperan, ayudando a identificar parámetros explotables.
+
+### Laboratorio 1 - Divulgación de información en mensajes de error
+
+> Los mensajes de error detallados de este laboratorio revelan que está utilizando una versión vulnerable de un marco de terceros. Para resolver el laboratorio, obtén y envía el número de versión de este marco.
+
+Cuando comienzas el laboratorio, ves una página de tienda web típica. Ve a "Ver detalles".
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l1/2024-05-09_23-19.png)
+
+Prueba si se produce un error si cambias el ID del producto.
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l1/2.png)
+
+¡Y sí!
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l1/3.png)
+
+## Datos de depuración
+
+Los sitios web a menudo generan mensajes de error y registros personalizados con fines de depuración. Estos pueden revelar involuntariamente mucha información sobre el comportamiento de la aplicación, como:
+
+- **Variables de sesión**: Valores que pueden manipularse a través de la entrada del usuario.
+- **Credenciales de back-end**: Nombres de host y credenciales para componentes de back-end.
+- **Nombres de archivos y directorios**: Nombres específicos de archivos y directorios en el servidor.
+- **Claves de cifrado**: Claves utilizadas para cifrar datos transmitidos a través del cliente.
+
+### Laboratorio 2 - Divulgación de información en la página de depuración
+
+> Este laboratorio contiene una página de depuración que divulga información sensible sobre la aplicación. Para resolver el laboratorio, obtén y envía la variable de entorno SECRET_KEY.
+
+Cada vez que realices una prueba de penetración en una aplicación web, es indispensable leer el código de la aplicación para buscar comentarios.
+
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l2/1.png)
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l2/2.png)
+
+## Páginas de cuenta de usuario
+
+Las páginas de cuenta de usuario o perfil suelen contener información sensible. Algunos sitios web tienen fallos de lógica que permiten a los atacantes explotar estas páginas para ver datos pertenecientes a otros usuarios. Asegurar controles de acceso y validación adecuados es crucial para prevenir el acceso no autorizado a información personal.
+Por ejemplo:
+
+`GET /user/personal-info?user=carlos`
+
+## Divulgación de código fuente a través de archivos de respaldo
+
+Cuando el código fuente es accesible a través de archivos de respaldo, facilita a los atacantes entender el comportamiento de la aplicación y lanzar ataques graves. A veces, datos sensibles como claves API y credenciales están codificados dentro del código fuente, aumentando el riesgo. Para prevenir esto, asegúrate de que los archivos de respaldo no sean accesibles públicamente.
+
+### Laboratorio 3 - Divulgación de código fuente a través de archivos de respaldo
+
+> Este laboratorio filtra su código fuente a través de archivos de respaldo en un directorio oculto. Para resolver el laboratorio, identifica y envía la contraseña de la base de datos, que está codificada en el código fuente filtrado.
+
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l3/1.png)
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l3/2.png)
+
+## Divulgación de información debido a una configuración insegura
+
+Los sitios web pueden ser vulnerables si están mal configurados. Esto ocurre a menudo con tecnologías de terceros, donde la amplia gama de opciones de configuración puede no ser completamente comprendida por quienes las configuran. Asegurar una configuración adecuada es esencial para prevenir la divulgación no intencionada de información y proteger datos sensibles.
+
+### Laboratorio 4 - Bypass de autenticación a través de divulgación de información
+
+> La interfaz de administración de este laboratorio tiene una vulnerabilidad de bypass de autenticación, pero es impráctico explotarla sin conocer un encabezado HTTP personalizado utilizado por el front-end. Para resolver el laboratorio, obtén el nombre del encabezado y luego úsalo para eludir la autenticación del laboratorio. Accede a la interfaz de administración y elimina al usuario carlos. Puedes iniciar sesión en tu propia cuenta utilizando las siguientes credenciales: wiener:peter
+
+Ingresa con las credenciales
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l4/1.png)
+
+Antes de enviar la solicitud, cambia el método a Trace.
+
+> El método HTTP TRACE está diseñado para fines de diagnóstico. Si está habilitado, el servidor web responderá a las solicitudes que utilicen el método TRACE devolviendo en la respuesta la solicitud exacta que se recibió. Este comportamiento suele ser inofensivo, pero ocasionalmente lleva a la divulgación de información, como el nombre de los encabezados de autenticación internos que pueden ser añadidos a las solicitudes por proxies inversos.
+
+Y vemos cuando la solicitud llega al servidor, con un encabezado con nuestra dirección IP.
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l4/2.png)
+
+Cambia la URL para ver si accedes al panel de administración. Pero aparece un mensaje. "...usuarios locales..." 🤔
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l4/3.png)
+
+Pon el encabezado y una IP local. Y vemos el panel de administración. Elimina a Carlos.
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l4/4.png)
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l4/5.png)
+
+### Laboratorio 5 - Divulgación de información en el historial de control de versiones
+
+> Este laboratorio divulga información sensible a través de su historial de control de versiones. Para resolver el laboratorio, obtén la contraseña del usuario administrador y luego inicia sesión para eliminar al usuario carlos.
+
+Al final de la URL pon `/.git`.
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l5/1.png)
+
+En `COMMIT_EDITMSG` vemos este mensaje.
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l5/2.png)
+
+Abro mi Kali y descargo.
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l5/4.png)
+
+Con el comando `git diff` veo la diferencia entre dos commits.
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l5/5.png)
+
+Si veo el historial de commits y los comentarios, encuentro qué commit tiene las credenciales que busco.
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l5/6.png)
+
+Con `git checkout` cambio a la rama que tiene las credenciales codificadas.
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l5/7.png)
+
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l5/8.png)
+
+Finalmente, elimina a Carlos.
+![](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/id/l5/2024-05-10_13-46.png)
+
+Espero que te resulte útil.👨‍💻
+Si tienes otro tipo de solución o si estoy equivocado en algo, por favor házmelo saber.

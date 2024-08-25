@@ -1,0 +1,115 @@
+---
+title: Pentest Tools - ⡷𝚔𝚊𝚛𝚖𝚊 𝚟𝟸⢾
+date: '2024-06-16'
+lastmod: '2023-08-05'
+tags: ['Tools', 'OSINT', 'Shodan']
+draft: false
+summary: 'Karma V2 nos permite descubrir información detallada sobre los objetivos, como IPs vulnerables, infraestructura interna y externa, y filtraciones públicas expuestas.'
+images: ['/static/images/karma']
+---
+
+![Portada](https://miro.medium.com/v2/resize:fit:640/format:webp/1*ED6ZmPCqS1-UclNjSIYHbg.png)
+
+<TOCInline toc={props.toc} exclude="Introduccion" />
+
+## ¿Qué es Karma V2?
+
+En 2023, descubrí esta fabulosa herramienta llamada Karma V2, creada por [Dheerajmadhukar](https://x.com/Dheerajmadhukar), mientras veía [este video](https://www.youtube.com/watch?v=-jLbRnmGYaA). Karma V2 es un marco automatizado de inteligencia de fuentes abiertas (OSINT).
+
+Esta herramienta utiliza la API premium de Shodan para ofrecer resultados poderosos, permitiéndonos descubrir información detallada sobre los objetivos, como IPs vulnerables, infraestructura interna y externa, y filtraciones públicas expuestas.
+
+Karma V2 ofrece varios modos para adaptarse a diferentes necesidades de reconocimiento:
+
+- **Escaneo de IP dentro y fuera de alcance**: Valida las IPs a través de coincidencias CN y detecta IPs fuera de alcance.
+- **Análisis de ASN y BGP**: Realiza búsquedas detalladas de números de sistemas autónomos, estadísticas BGP, vecinos y prefijos IPv4 e IPv6.
+- **Escaneo de Hosts**: Identifica sistemas operativos, servidores, productos, CVEs, puertos abiertos y organizaciones.
+- **Detección de Vulnerabilidades Específicas**: Escanea dominios para identificar vulnerabilidades y exploits basados en IDs de CVE.
+- **Búsqueda y Análisis de Favicon**: Detecta tecnologías utilizando hashes de favicons generados y plantillas personalizadas.
+- **Ignorar nodos CDN**: Excluye nodos CDN como Akamai y Cloudflare durante los escaneos.
+- **Búsqueda de filtraciones y activos de DevOps**: Encuentra filtraciones y activos interesantes relacionados con DevOps, SIEM y dashboards abiertos.
+
+## Instalación
+
+Un problema que mis colegas y yo encontramos fue la instalación de la herramienta, ya que depende de otros softwares. Esta es la razón principal de esta publicación: proporcionar una guía de instalación sencilla y paso a paso. Si al final sigues esta guía y no funciona en el primer intento, no dudes en contactarme.
+
+**1 — Clonar el repositorio**
+
+```
+git clone https://github.com/Dheerajmadhukar/karma_v2.git
+cd karma_v2
+```
+
+**2 — Instalar el módulo de Python shodan y mmh3**
+
+```
+sudo python3 -m pip install shodan mmh3
+```
+
+**3 — Instalar el parser JSON [JQ]**
+
+```
+sudo apt install jq -y
+```
+
+**4 — Instalar httprobe**
+
+```
+git clone https://github.com/tomnomnom/httprobe.git
+cd httprobe
+go build main.go
+mv main httprobe
+sudo mv httprobe /bin/
+```
+
+**5 — Instalar Interlace**
+
+```
+git clone https://github.com/codingo/Interlace.git
+pip install -r requirements.txt
+sudo python3 setup.py install
+```
+
+**6 — Instalar Nuclei**
+
+```
+sudo apt install nuclei
+```
+
+**7 — Instalar lolcat**
+
+```
+sudo apt install lolcat -y
+```
+
+**8 — Instalar anew**
+
+```
+git clone https://github.com/tomnomnom/anew.git
+cd anew
+go build main.go
+mv main anew
+sudo mv anew /bin/
+```
+
+**9 — Colocar tu apikey**
+
+```
+cat > .token
+SHODAN_PREMIUM_API_HERE
+```
+
+**10 — Usar**
+
+```
+bash karma_v2 -d DOMAIN --limit -1 -deep
+```
+
+## Imágenes
+
+![Imagen 1](https://miro.medium.com/v2/resize:fit:786/format:webp/1*yQhGA0pBrmsfizxYj2UOSg.png)
+![Imagen 2](https://miro.medium.com/v2/resize:fit:786/format:webp/1*TsF03j2E8kSL3D3WIcmfSQ.png)
+
+## Para más información
+
+- [Repositorio de Github](https://github.com/Dheerajmadhukar/karma_v2)
+- [Video](https://www.youtube.com/watch?v=ZMSX0vCsLOY&t=1s)

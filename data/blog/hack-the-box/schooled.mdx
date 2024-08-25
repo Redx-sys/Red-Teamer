@@ -4,13 +4,14 @@ date: '2023-10-09'
 lastmod: '2023-08-05'
 tags: ['labs', 'HackTheBox']
 draft: true
-summary: 'Lame is a beginner-level machine that only requires one exploit to gain root access. It was the first machine published on Hack The Box and is often the first machine for new users.'
+summary: 'Schooled es una máquina FreeBSD de dificultad media que presenta dos vulnerabilidades recientemente reveladas que afectan a la plataforma Moodle (etiquetadas CVE-2020-25627 y CVE-2020-14321), que deben encadenarse para poder acceder como usuario "maestro". escalar privilegios a un usuario "administrador" e instalar un complemento malicioso que resulta en la ejecución remota de comandos. Descifrar un hash obtenido de la base de datos de Moodle permite el acceso SSH al sistema mediante la reutilización de contraseñas. Luego, los privilegios se pueden escalar a "root" instalando un paquete malicioso (lo cual es posible debido a los permisos "sudo" y al acceso de escritura al archivo "/etc/hosts"). '
 images: ['/static/images/htb/lame/Lame.png']
 ---
 
 ![Portada](/static/images/htb/schooled/schooled.png)
 
 {' '}
+
 <br></br>
 
 <TOCInline toc={props.toc} exclude="Introduccion" />
