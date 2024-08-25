@@ -2,20 +2,21 @@
 title: Netmon
 date: '2023-07-09'
 lastmod: '2023-08-05'
-tags: ['labs', 'HackTheBox']
-draft: false
-summary: 'Lame is a beginner-level machine that only requires one exploit to gain root access. It was the first machine published on Hack The Box and is often the first machine for new users.'
+tags: ['Labs', 'HackTheBox', 'FTP Enumeration', 'Information Leakage', 'Nishang']
+draft: true
+summary: 'Netmon es una maquina Windows de fácil dificultad con enumeración y explotación sencillas. PRTG se está ejecutando y un servidor FTP con acceso anónimo permite leer los archivos de configuración de PRTG Network Monitor. La versión de PRTG es vulnerable a RCE, que puede explotarse para obtener un shell de SISTEMA'
 images: ['/static/images/htb/lame/Lame.png']
 ---
 
 ![Portada](/static/images/htb/netmon/netmon.png)
 
 {' '}
+
 <br></br>
 
 <TOCInline toc={props.toc} exclude="Introduccion" />
 
-## RECONOCIMIENTO
+## Reconocimiento
 
 ### Ping
 
@@ -68,7 +69,7 @@ nmap reporto como abiertos incluyendo las siguientes flags:
 | **_5985/tcp_** <br></br> **_47001/tcp_**                                                                      | http        | Microsoft-HTTPAPI/2.0                                |
 | **49664/tcp** <br></br> **49665/tcp** <br></br> **49666/tcp** <br></br> **49667/tcp** <br></br> **49669/tcp** | msrpc       | Microsoft Windows RPC                                |
 
-## ENUMERACION
+## Enumeracion
 
 ### Puerto 21 - FTP
 
@@ -140,7 +141,7 @@ Dentro de Configuration.old.bak encontramos unas credenciales.
 Usamos `prtgadmin:PrTg@dmin2018`, y no funcionan. En vez de 2018, usamos 2019 y obtenemos acceso.
 ![Prtg](/static/images/htb/netmon/dashboard.png)
 
-## EXPLOTACION
+## Explotacion
 
 Buscando vulnerabilidades para PRTG nos topamos con [esta pagina](https://vulmon.com/searchpage?q=prtg+network+monitor&page=2) la cual tiene una vulnerabilidad de [inyeccion de comandos](https://vulmon.com/vulnerabilitydetails?qid=CVE-2018-9276&scoretype=cvssv3) y que fue testeada en la version en la que estamos auditando.
 

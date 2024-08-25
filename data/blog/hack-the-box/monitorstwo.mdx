@@ -2,20 +2,28 @@
 title: MonitorsTwo
 date: '2023-08-13'
 lastmod: '2023-08-05'
-tags: ['labs', 'HackTheBox']
+tags:
+  [
+    'labs',
+    'HackTheBox',
+    'RCE',
+    'Weak Credentials',
+    'Weak Authentication',
+    'PrivEsc SUID',
+    'Docker',
+    'CVE-2022-46169',
+    'Cacti-1.2.22',
+  ]
 draft: true
-summary: 'Lame is a beginner-level machine that only requires one exploit to gain root access. It was the first machine published on Hack The Box and is often the first machine for new users.'
+summary: 'MonitorsTwo es una máquina Linux de dificultad fácil que muestra una variedad de vulnerabilidades y configuraciones incorrectas. La enumeración inicial expone una aplicación web propensa a la ejecución remota de código (RCE) de autenticación previa a través de un encabezado X-Forwarded-For malicioso. La explotación de esta vulnerabilidad otorga un shell dentro de un contenedor Docker. Un binario capsh mal configurado con el bit SUID configurado permite el acceso de root dentro del contenedor. Descubrir las credenciales de MySQL permite descargar un hash que, una vez descifrado, proporciona acceso SSH a la máquina. Una enumeración adicional revela una versión vulnerable de Docker (CVE-2021-41091) que permite a un usuario con pocos privilegios acceder a sistemas de archivos de contenedores montados. Al aprovechar el acceso raíz dentro del contenedor, se copia un binario bash con el bit SUID configurado, lo que genera una escalada de privilegios en el host. '
 images: ['/static/images/htb/monitorstwo/monitorstwo.pn']
 ---
 
 ![Portada](/static/images/htb/monitorstwo/monitorstwo.png)
 
-{' '}
-<br></br>
-
 <TOCInline toc={props.toc} exclude="Introduccion" />
 
-## RECONOCIMIENTO
+## Reconocimiento
 
 ### Ping
 
@@ -58,7 +66,7 @@ Luego, realizamos el escaneo de puertos.
 | **_22/tcp_**     | ssh      | Open SSH 8.2p1 |
 | **_80/tcp_**     | http     | nginx 1.18.0   |
 
-## ENUMERACION
+## Enumeracion
 
 ### Puerto 80 - Http
 
@@ -144,7 +152,7 @@ Me conecto por SSH.
 Y consigo la user flag.
 ![Nmap1](/static/images/htb/monitorstwo/17.png)
 
-## ROOT
+## Root
 
 ### Enumeracion
 
@@ -173,7 +181,3 @@ ESO LO HICIMOS AL PRINCIPIO. ESTA PASO YA ESTA ECHO.
 ![Nmap1](/static/images/htb/monitorstwo/26.png)
 ![Nmap1](/static/images/htb/monitorstwo/27.png)
 ![Nmap1](/static/images/htb/monitorstwo/28.png)
-
-## DIAGRAMA
-
-![Nmap1](/static/images/htb/monitorstwo/30.png)

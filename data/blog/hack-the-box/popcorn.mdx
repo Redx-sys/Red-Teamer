@@ -1,20 +1,20 @@
 ---
 title: Popcorn
-date: '2023-06-30'
+date: '2024-06-30'
 lastmod: '2023-08-05'
-tags: ['labs', 'HackTheBox']
+tags: ['Labs', 'HackTheBox', 'Web', 'File Upload', 'Dirty Cow', 'Compile Exploit in C']
 draft: false
-summary: 'Lame is a beginner-level machine that only requires one exploit to gain root access. It was the first machine published on Hack The Box and is often the first machine for new users.'
-images: ['/static/images/htb/lame/Lame.png']
+summary: 'Popcorn, aunque no es demasiado complicado, contiene bastante contenido y puede resultar difícil para algunos usuarios localizar el vector de ataque adecuado al principio. Esta máquina se centra principalmente en diferentes métodos de explotación web. '
+images: ['/static/images/htb/popcorn/popcorn.png']
 ---
 
 ![Portada](/static/images/htb/popcorn/Popcorn.png)
 
 # [MIRA EL VIDEO TUTORIAL](https://youtu.be/xYD4cLwgwDw)
 
-<TOCInline toc={props.toc} exclude="Introduccion" />
+<TOCInline toc={props.toc} exclude="MIRA EL VIDEO TUTORIAL" />
 
-## RECONOCIMIENTO
+## Reconocimiento
 
 ### Ping
 
@@ -62,7 +62,7 @@ Cuando obtenemos la lista de puertos abiertos en la máquina víctima, realizamo
 | **_22/tcp_**     | ssh      | OpenSSH 5.1p1       |
 | **_80/tcp_**     | http     | Apache httpd 2.2.12 |
 
-## ENUMERACIÓN
+## Enumeracion
 
 ### Puerto 80 - http
 
@@ -127,7 +127,9 @@ Con acceso al servidor, encontramos el `user.txt` ubicado en el directorio del u
 
 ![Ping](/static/images/htb/popcorn/19.png)
 
-## ROOT
+## Root
+
+### Escalada de privilegios
 
 Comenzando con el reconocimiento, encontramos la versión del kernel, que es vulnerable a [Dirty Cow](https://en.wikipedia.org/wiki/Dirty_COW).
 

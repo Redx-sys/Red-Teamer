@@ -2,9 +2,9 @@
 title: Topology
 date: '2023-08-12'
 lastmod: '2023-08-05'
-tags: ['labs', 'HackTheBox']
+tags: ['labs', 'HackTheBox', 'JohnTheRipper', 'Code Injection', 'LFI', 'Directory Traversal']
 draft: false
-summary: 'Lame is a beginner-level machine that only requires one exploit to gain root access. It was the first machine published on Hack The Box and is often the first machine for new users.'
+summary: 'Topology es una máquina Linux de dificultad fácil que muestra una aplicación web "LaTeX" susceptible a una vulnerabilidad de inclusión de archivos locales (LFI). Explotar la falla LFI permite recuperar un archivo `.htpasswd` que contiene una contraseña hash. Al descifrar el hash de la contraseña, se obtiene acceso "SSH" a la máquina, lo que revela un cronjob "root" que ejecuta archivos "gnuplot". La creación de un archivo `.plt` malicioso permite la escalada de privilegios. .'
 images: ['/static/images/htb/topology/topology.png']
 ---
 
@@ -12,7 +12,7 @@ images: ['/static/images/htb/topology/topology.png']
 
 <TOCInline toc={props.toc} exclude="Introduccion" />
 
-## RECONOCIMIENTO
+## Reconocimiento
 
 ### Ping
 
@@ -49,7 +49,7 @@ Luego, realizamos el escaneo de puertos.
 | **_22/tcp_**     | SSH      | OpenSSH 8.2p1       |
 | **_80/tcp_**     | http     | Apache httpd 2.4.41 |
 
-## ENUMERACION
+## Enumeracion
 
 ### Puerto 80 - Http
 
@@ -61,7 +61,7 @@ en la cual generan imagenes de ecuaciones escritas en LaTex.
 Una rapida busqueda en google y encontramos que LaTex posee vulnerabilidades.
 ![Portada](/static/images/htb/topology/5.png)
 
-## EXPLOTACION
+## Explotacion
 
 URLs de apoyo:
 
@@ -96,7 +96,7 @@ Conseguimos un hash, lo copiamos e intentamos descifrarlo con John The Ripper.
 Luego de conseguir la password del usuario vdaisley, intentamos conectarnos mediante SSH a la maquina.
 Efectivamente tenemos acceso, en este punto ya podemos obtener la flag user.txt.
 
-## ESCALADA DE PRIVILEGIOS
+## Escalada de privilegios
 
 Una vez dentro, con herramientas como [Linpeas](https://github.com/carlospolop/PEASS-ng/tree/master)
 vemos que en `/opt` tenemos el directorio gnuplot, el cual nos va a permitir ejecutar comandos con maximos privilegios.

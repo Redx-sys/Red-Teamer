@@ -2,7 +2,7 @@
 title: Blue
 date: '2023-07-11'
 lastmod: '2023-08-05'
-tags: ['labs', 'HackTheBox']
+tags: ['labs', 'HackTheBox', 'SMB Enumeration', 'Eternal Blue']
 draft: false
 summary: 'Blue, aunque posiblemente sea la máquina más simple de Hack The Box, demuestra la gravedad del exploit EternalBlue, que se ha utilizado en múltiples ataques de criptominería y ransomware a gran escala desde que se filtró públicamente.'
 images: ['/static/images/htb/blue/blue.png']
@@ -14,7 +14,7 @@ images: ['/static/images/htb/blue/blue.png']
 
 <TOCInline toc={props.toc} exclude="Introduccion" />
 
-## RECONOCIMIENTO
+## Reconocimiento
 
 ### Nmap
 
@@ -34,7 +34,7 @@ el cual me agiliza y automatiza el escaneo con nmap y me retorna el reporte en H
 | **_139/tcp_**                                                                                                                                               | netbios-ssn | Microsoft Windows netbios-ssn                           |
 | **_445/tcp_**                                                                                                                                               | netbios-ssn | Windows 7 Professional 7601 Service Pack 1 microsoft-ds |
 
-## ENUMERACION
+## Enumeracion
 
 ### Puerto 445 - Windows 7 Professional 7601 Service Pack 1 microsoft-ds
 
@@ -49,7 +49,7 @@ EternalBlue aprovecha una vulnerabilidad en la implementación del protocolo SMB
 
 Una vez que un sistema ha sido comprometido mediante EternalBlue, el atacante puede tomar el control total del mismo, sin necesidad de autenticación. Esto significa que puede realizar acciones como la instalación de malware, robo de datos, propagación en la red y otros ataques maliciosos.
 
-## EXPLOTACION
+## Explotacion
 
 Para la maquina Blue, la explotacion es muy sencilla. Mediante una busqueda en google debemos conseguir los scripts,
 cambiar ciertas lineas del codigo, ejecutarlos y enseguida obtendremos el acceso a la maquina con los permisos del usuario privilegiado **nt authority\system**

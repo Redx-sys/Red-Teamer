@@ -4,7 +4,7 @@ const siteMetadata = {
   author: 'Nicolas Gula',
   headerTitle: '',
   description:
-    ' Tu guía en pentesting web y hacking de entornos empresariales. Aprende con writeups de HTB, Portswigger, técnicas de ataque en Active Directory (PROXIMAMENTE), y análisis de ataques y vulnerabilidades para mejorar tus habilidades de seguridad ofensiva.',
+    'Guía para pentesting web y hacking de entornos empresariales. Aprende con writeups de HTB, Portswigger, técnicas de ataque en Active Directory (PROXIMAMENTE), y análisis de ataques y vulnerabilidades para mejorar tus habilidades de seguridad ofensiva.',
   language: 'en-us',
   theme: 'system', // system, dark or light
   siteUrl: 'https://offensivemobile.vercel.app',

@@ -2,9 +2,9 @@
 title: Legacy
 date: '2023-07-29'
 lastmod: '2023-08-05'
-tags: ['labs', 'HackTheBox']
+tags: ['labs', 'HackTheBox', 'SMB Enumeration', 'Eternalblue Explotation(MS17-010)']
 draft: true
-summary: 'Lame is a beginner-level machine that only requires one exploit to gain root access. It was the first machine published on Hack The Box and is often the first machine for new users.'
+summary: 'Legacy es una máquina de nivel principiante bastante sencilla que demuestra los riesgos potenciales de seguridad de SMB en Windows. Sólo se requiere un exploit disponible públicamente para obtener acceso de administrador. '
 images: ['/static/images/htb/legacy/Legacy.png']
 ---
 
@@ -14,7 +14,7 @@ images: ['/static/images/htb/legacy/Legacy.png']
 
 <TOCInline toc={props.toc} exclude="MIRA EL VIDEO TUTORIAL" />
 
-## RECONOCIMIENTO
+## Reconocimiento
 
 ### Ping
 
@@ -62,7 +62,7 @@ De hecho, encontramos dos vulnerabilidades:
 - [CVE-2008-4250](https://cve.mitre.org/cgi-bin/cvename.cgi?name=cve-2008-4250)
 - [CVE-2017-0143](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2017-0143)
 
-## ENUMERACIÓN y EXPLOTACIÓN CON METASPLOIT
+## Enumeracion y Explotacion con Metasploit
 
 ### CVE-2008-4250
 

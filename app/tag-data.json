@@ -10,5 +10,7 @@
   "mobilehackinglabs": 2,
   "logcat": 1,
   "rce": 1,
-  "fridump": 1
+  "fridump": 1,
+  "web": 1,
+  "file-upload": 1
 }
