@@ -1,0 +1,64 @@
+---
+title: 'Como se crea una aplicacion Web en 2024'
+date: '2024-08-28'
+tags: ['software', 'dev']
+draft: true
+summary: The Time Traveller (for so it will be convenient to speak of him) was
+  expounding a recondite matter to us. His pale grey eyes shone and
+  twinkled, and his usually pale face was flushed and animated...
+---
+
+Vamos a ir paso por paso en el ciclo entero del desarollo de software.
+
+En todo el desarrollo de software nos encontramos con diferentes roles y procesos.
+Tenemos desarrolladores que son los que programan la aplicacion.
+Tenemos muchos lenguajes como Java, Python.
+Ellos agregan nuevas funcionalidades o arreglan los bugs, que son errores en el codigo.
+
+Tenemos a los testers, que prueban todas las funcionalidades de la aplicacion. Lo hacen de forma manual y automatizada.
+
+Luego de que se lanza un release del software, tenemos a la gente de operaciones. Ellos buildean la app y la desplegan en servidores.
+Hacen el upgrade el software existente y corren este mismo en produccion.
+
+Hace anos esto dejo de ser tan asi, ahora entre medio de estos roles tenemos a los DevOps y DevSecOps,que serian los intermediarios
+entre el desarrollo de software y las operaciones.
+Ellos hacen que el proceso continuo de la entrega de producto sea mas rapido y con errores minimos.
+
+Como punto de partida tenemos el codigo que compone la aplicacion web. Para esto tenemos el frontend y el backend.
+Si lo corremos en nuestra maquina y anda es tiempo se subirlo a un repositorio donde todos los desarrolladores que trabajan en el mismo proyecto puedan trabajar con
+las mismas versiones de codigo. Aca entre en juego herramientas como Git y plataformas como Github, Gitlab... {}.
+
+Las aplicaciones necesitan ser desplegadas en servidores en produccion para que la gente acceda a esos app.
+Para eso, necesitamos empaquetar la app en un archivo unico, el cual se le conoce por lo general como artifact. Este proceso lo realiza el package manager.
+En ese artifact esta todo el codigo de la aplicacion y todas sus dependencias.
+npm, mave, gradle
+
+Este compila y comprime el codigo.
+
+Luego de tener este artifact, lo subimos a un repository artifact guardandolo para mas tarde descargarlo desde un servidor remoto desde cualquier lado.
+Esto es una parte del proceso, pero no es algo que ocurra en nuestras maquinas, si no que lo hacemos en repositorios (github, gitlab)
+Para esta parte usamos Docker (o otros) y Jenkins(u otros) para crear la app con herramientas de automatizacon.
+
+En estos tiempos no necesitamos omver de un lado a otro un artifact, utilizamos DOcker Images que son creadas a partir de las aplicaciones.
+No necesitamos mas un repositorio para cada tipo de archivo ni instalar dependecnias en el servidor. Todo esta dentro de una imagen de Docker
+
+Antes de seguir tenemos que tener en claro ciertas cosas.
+IaaS
+
+Nos ofrecen almacenamiento,computadoras y redes en demandas.
+En vez de comprar nuestros propios servidores que es a lo que le llamamos infraestructura, delegamos esa infraestructura a otras empresas (AWS, GC....).\
+La "nube" no esta en el cielo, es la computadora de otra empresa que le pagamos en base al uso que le damos. Alli es donde instalamos nuestras aplicaciones.
+
+Existen los respositorios de artifacts, como Nexus. Estos almacenan los artifacts construidos produciodos pr CI y los dejan disponibles para el despliegue automatico
+en diferentes entornos.Es un lugar centralizado.
+
+Los artifacts son las aplicaciones construidas en un archvo unico. Hay muchos formatos, dependeindo el tipo de lenguaje de programacion.
+Tambien tenemos los repositorios de estos artifacts,tenemos publico y privados, en los publico sson para librerias frameworks...por otro lado los privados son para uso interno
+de la compania.
+
+Contenedores
+Estos son una manera de empaquetar la aplicacione con todas sus dependencias necesarias y su configuracion.
+Es un artefacto portable y estandarizado para desarollo, entrega y despliegue.
+
+Estos son hosteados en repositorios de contenedores. Hay privados y publicos. uno publico por ejemplo es Docker y una opcion privada es Amazon ECR.
+Aca podemos almacenar nuestras imagenes (que son nuestras apicaciones adentro de un contenendor)

@@ -71,6 +71,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <link rel="icon" type="image/png" sizes="16x16" href="/static/favicons/favicon-16x16.png" /> */}
       <link rel="manifest" href="/static/favicons/site.webmanifest" />
       <link rel="mask-icon" href="/static/favicons/slogo.png" color="#5bbad5" />
+      google-site-verification=EjbvCtS5wlpnw2GUMyiKAqhCQvSwiKF_3yojme_gogg
       <meta name="google-site-verification" content="uTMoqMc9K_yllcCGoD_dA8iday1dBT178xhJfZyZhzw" />
       <meta name="msapplication-TileColor" content="#000000" />
       <meta name="theme-color" media="(prefers-color-scheme: light)" content="#fff" />
