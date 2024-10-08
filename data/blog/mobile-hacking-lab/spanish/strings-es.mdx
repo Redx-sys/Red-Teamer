@@ -3,7 +3,7 @@ title: 'Strings'
 date: '2024-07-07'
 lastmod: '2023-08-05'
 tags: ['spanish', 'labs', 'mobile', 'android', 'mobilehackinglabs', 'frida', 'fridump']
-draft: false
+draft: true
 summary: 'En este laboratorio se nos proporciona una aplicacion de Android y el objetivo es encontrar una bandera. El formato tiene que ser `MHL{...}`. Para esto vamos a tener que realizar ingenieria inversa a la apk, identificar la actividad exportada, encontrar una manera de invocar la actividad y utlizar frida para escanear la memoria en busca de la bandera.'
 images: ['/static/images/strings/strings.png']
 ---
@@ -13,27 +13,25 @@ images: ['/static/images/strings/strings.png']
 ![logo strings](/static/images/strings/strings.png)
 
 Strings es un laboratorio que se encuentra disponible en [MobileHackingLab](https://www.mobilehackinglab.com/link/gnVA9O).
-En este laboratorio se nos proporciona una aplicacion de Android y el objetivo es encontrar una bandera. 
-El formato tiene que ser `MHL{...}`. Para esto vamos a tener que realizar ingenieria inversa a la apk, identificar 
-la actividad exportada, encontrar una manera de invocar la actividad y utlizar frida para escanear la memoria en busca de la flag. 
+En este laboratorio se nos proporciona una aplicacion de Android y el objetivo es encontrar una bandera.
+El formato tiene que ser `MHL{...}`. Para esto vamos a tener que realizar ingenieria inversa a la apk, identificar
+la actividad exportada, encontrar una manera de invocar la actividad y utlizar frida para escanear la memoria en busca de la flag.
 
-Para todo esto vamos a tener que tener una comprension de las aplicaciones Android, 
+Para todo esto vamos a tener que tener una comprension de las aplicaciones Android,
 de ingenieria inversa en aplicaciones Android y saber como usar [Frida](https://frida.re/).
 Si aun no tenemos ese conocimiento, relax, lo vamos a ir obteniendo sobre la marcha a medida que avancemos en este post y metamos manos.
-
 
 <TOCInline toc={props.toc} exclude="Introduccion" />
 
 ## 1.Extraer y decompilar la APK
 
-En este laboratorio se nos da acceso a un dispositivo Android por medio de [Corellium](https://www.corellium.com/solutions/mobile-app-pentesting), como el acceso es limitado,me descargo la apk para hacerlo en mi propio emulador. 
+En este laboratorio se nos da acceso a un dispositivo Android por medio de [Corellium](https://www.corellium.com/solutions/mobile-app-pentesting), como el acceso es limitado,me descargo la apk para hacerlo en mi propio emulador.
 ![Image 1](/static/images/strings/1.png)
 
-
-Ingresamos al dispositivo que se nos proporciona y para listar todos los paquetes de aplicaciones instaladas en 
-el dispositivo usamos `pm list packages`. Esta lista incluye tanto las aplicaciones del usuario como las del dispositivo. 
-Cada aplicacion en Android se identifica mediante un nombre de paquete unico que generalmente sigue el formato 
-**com.nombredeempresa.nombredeaplicacion**. Y como estamos buscando uno en particular. utilizamos grep para encontrar uno que diga 
+Ingresamos al dispositivo que se nos proporciona y para listar todos los paquetes de aplicaciones instaladas en
+el dispositivo usamos `pm list packages`. Esta lista incluye tanto las aplicaciones del usuario como las del dispositivo.
+Cada aplicacion en Android se identifica mediante un nombre de paquete unico que generalmente sigue el formato
+**com.nombredeempresa.nombredeaplicacion**. Y como estamos buscando uno en particular. utilizamos grep para encontrar uno que diga
 **_mobilehacking_**.
 
 ```shell:ListarPaquetes
@@ -45,6 +43,7 @@ Para obtener la ruta completa donde se encuentra almacenado el archivo apk de la
 ```shell:RutaCompleta
 pm path com.mobilehackinglab.challenge
 ```
+
 ![](/static/images/strings/2.png)
 
 ![](/static/images/strings/3.png)
@@ -54,7 +53,7 @@ Con este comando lo que hacemos es transferir el archivo apk desde el dispositiv
 
 ![](/static/images/strings/4.png)
 
-Ahora descomprimimos el archivo APK en una estructura de directorios y archivos con [APKTool](https://apktool.org/docs/the-basics/intro), que descompila el archivo en sus componentes originales en formato legible. 
+Ahora descomprimimos el archivo APK en una estructura de directorios y archivos con [APKTool](https://apktool.org/docs/the-basics/intro), que descompila el archivo en sus componentes originales en formato legible.
 
 ```shell:Decompile
 apktool d APP.APK
@@ -63,11 +62,14 @@ apktool d APP.APK
 ![](/static/images/strings/6.png)
 
 ## 2.Code Review
+
 ### 2.1.AndroidManifest
+
 Comencemos por el AndroidManifest.xml.
 ![](/static/images/strings/5.png)
 
 Al hacer code review vemos que:
+
 1. La _activty_ `com.mobilehacking.challenge.Activity2` tiene el atributo `android:exported="true"`. Esto indica que la _Activity_ es accesible desde fuera de la aplicacion, osea, cualquier aplicacion puede acceder a ella e iniciarla por su nombre de clase exacto.
 2. Dentro de ella encontramos un _Intent-filter_, especificando que _Intents_ pueden manejar esta _activity_.
 
@@ -78,6 +80,7 @@ En la documentacion de Android encontramos que un Intent [_“es básicamente un
 Un **Intent** es como una peticion o un mensaje que una aplicacion envia para pedir a otra app que haga algo especifico.Puedes pensar en ello como una especie de carta que una app le envia a otra para decirle que haga una **ACCION** determinada, como abrir una pagina web, mostrar una foto, reproducir un video o otra tarea.
 
 Características principales de un intent:
+
 1. **action**: Es lo que la aplicación quiere hacer, como abrir una página web o enviar un mensaje de texto.
 2. **data**: Son detalles adicionales que pueden acompañar a la acción, como la dirección web que se desea abrir o la foto que se desea mostrar.
 3. **category**: Son etiquetas adicionales que pueden ayudar a la aplicación a entender mejor el tipo de tarea que se quiere realizar.
@@ -102,19 +105,23 @@ Desglozemos el codigo:
 ```xml
 <action android:name="android.intent.action.VIEW"/>
 ```
+
 - `<action>`: Define la acción que el intent puede realizar. En este caso, **android.intent.action.VIEW** indica que la actividad puede manejar intents cuya acción sea ver o mostrar algo. Es comúnmente utilizado para abrir URLs, ver imágenes, abrir archivos, etc.
 - `android:name`: Es el nombre de la acción específica que el intent-filter está configurado para manejar.
 
 ```xml
 <category android:name="android.intent.category.DEFAULT"/>
 ```
+
 Especifica que esta actividad puede manejar el intent por defecto de su tipo (VIEW en este caso).
+
 - `<category>`: Define la categoría a la que pertenece el intent. **android.intent.category.DEFAULT** indica que esta actividad es la acción predeterminada para manejar este tipo de intent si no se especifica otra actividad explícitamente.
 - `android:name`: Es el nombre de la categoría específica que el intent-filter está configurado para manejar.
 
 ```xml
 <category android:name="android.intent.category.BROWSABLE"/>
 ```
+
 - `<category>`: Otra categoría que puede tener el intent. **android.intent.category.BROWSABLE** indica que la actividad puede ser lanzada directamente desde un navegador web como resultado de hacer clic en un enlace.
 - `android:name`: Es el nombre de la categoría específica que el intent-filter está configurado para manejar.
 
@@ -125,7 +132,6 @@ Especifica que esta actividad puede manejar el intent por defecto de su tipo (VI
 - `<data>:` Define los datos que el intent puede manejar. En este caso:
   - `android:scheme="mhl"`: Especifica el esquema o protocolo de los datos. El esquema `mhl` indica que el intent puede manejar URIs que comiencen con `mhl://`.
   - `android:host="labs"`: Especifica el host o servidor al que se dirige el intent dentro del contexto del esquema especificado. En este caso, el host es `labs`.
-
 
 Habiendo dejado claro lo que ocurre en el codigo, en pocas palabras, tenemos que encontrar una forma de poder acceder a la Activity2 ya que posee el atributo `android:exported="true"`
 teniendo un problema de [Improper Export of Android Application Components](https://cwe.mitre.org/data/definitions/926.html) siendo accesible desde fuera de la app propia.
@@ -198,18 +204,21 @@ public void onCreate(Bundle savedInstanceState) {
 
 ```java
 public void onCreate(Bundle savedInstanceState)
-```  
+```
+
 Cuando una actividad se llama o se inicia por primera vez, el método onCreate(Bundle saveInstanceState) es responsable de crear la actividad..
 
 ```java
 super.onCreate(savedInstanceState);
 ```
+
 Llama la clase onCreate,esta clase realiza configuraciones para la activity,
 como la incializacion de la interfaz de usuario y la gestion del ciclo de vida.
 
 ```java
 setContentView(R.layout.activity_2);
 ```
+
 Establece el diseno de una activity en la pantalla del dispositivo. `setContentView` toma como argumento una referencia a un recurso
 de diseno,en este caso `R.layout`. Si vamos a la estructura de carpetas generada luego de decompilar la apk entendemos mejor esa estructura.
 
@@ -218,6 +227,7 @@ de diseno,en este caso `R.layout`. Si vamos a la estructura de carpetas generada
 ```java
 SharedPreferences sharedPreferences = getSharedPreferences("DAD4", 0);
 ```
+
 Obtiene una instancia del objeto `SharedPreferences` asociada con el nombre "DAD4". Los SharedPreferences
 son un almacen de datos clave-valor que persisten en toda la vida de la aplicacion. El 0, indica el modo de acceso
 ,en este caso MODE_PRIVATE, que significa que solo la app tiene acceso a estos `sharedPreferences`.
@@ -225,12 +235,14 @@ son un almacen de datos clave-valor que persisten en toda la vida de la aplicaci
 ```java
 String u_1 = sharedPreferences.getString("UUU0133", null);
 ```
-Este método obtiene el valor asociado con la clave "UUU0133" de los SharedPreferences. 
+
+Este método obtiene el valor asociado con la clave "UUU0133" de los SharedPreferences.
 Si no hay ningún valor asociado con esa clave, devuelve null.
 
 ```java
 boolean isActionView = Intrinsics.areEqual(getIntent().getAction(), "android.intent.action.VIEW");
 ```
+
 **getIntent().getAction()** obtiene la action asociada con la intent que inicio la activity.
 E **Intrinsics.areEqual** es una funcion que compara dos valores y determina si son iguales.
 Entonces, **isActionView** sera True, si la action del intent es "android.intent.action.VIEW",
@@ -241,7 +253,7 @@ boolean isU1Matching = Intrinsics.areEqual(u_1, cd());
 ```
 
 `u_1` es un string que se obtuvo anteriormente de los **sharedPreferences**, usando la clave `UUU0133`.
-**cd()** es una funcion, que en este caso, el valor que devuelve **cd()** se compara con `u_1`, y en caso de que 
+**cd()** es una funcion, que en este caso, el valor que devuelve **cd()** se compara con `u_1`, y en caso de que
 sean iguales, `isU1Matching` sera True.
 
 Segunda parte
@@ -279,7 +291,7 @@ if (uri != null && Intrinsics.areEqual(uri.getScheme(), "mhl") && Intrinsics.are
 ```
 
 Verifica que `uri` no esta vacia, que el `scheme` sea igual a "mhl" y que el `host` sea igual a "labs".
-`uri.getLastPathSegment()` obtiene el último segmento de la ruta de la URI. 
+`uri.getLastPathSegment()` obtiene el último segmento de la ruta de la URI.
 Se asume que este segmento contiene un valor en formato Base64 y decodifica el valor Base64 almacenado en base64Value.
 
 ```java
@@ -292,15 +304,16 @@ if (decodedValue != null) {
 
 Si decodeValue no es vacio, procede con el bloque de codigo. **String ds = new String(decodedValue, Charsets.UTF_8)** convierte el arreglo
 a un string. Esto convierte los datos decodificados de Base64 a su representación de texto.
-Luego,crea un arreglo de bytes a partir de la cadena "your_secret_key_1234567890123456", utilizando UTF-8 como codificación. 
+Luego,crea un arreglo de bytes a partir de la cadena "your_secret_key_1234567890123456", utilizando UTF-8 como codificación.
 Este arreglo de bytes se usa como clave secreta para el proceso de descifrado.
-Esta línea parece ser una validación interna o un chequeo de no nulidad para el arreglo de bytes. 
+Esta línea parece ser una validación interna o un chequeo de no nulidad para el arreglo de bytes.
 
 ```java
 String str = decrypt("AES/CBC/PKCS5Padding", "bqGrDKdQ8zo26HflRsGvVA==", new SecretKeySpec(bytes, "AES"));
 ```
-Invoca una funcion decrypt para descifrar un texto cifrado utilizando el algoritmo AES en modo CBC(Cipher Block Chaining) con 
-relleno PKCS5Padding. Se utiliza una clave secreta ("your_secret_key_1234567890123456") derivada del arreglo de bytes 
+
+Invoca una funcion decrypt para descifrar un texto cifrado utilizando el algoritmo AES en modo CBC(Cipher Block Chaining) con
+relleno PKCS5Padding. Se utiliza una clave secreta ("your_secret_key_1234567890123456") derivada del arreglo de bytes
 creado anteriormente.
 
 En resumen: una vez que se verifica que `decodeValue` no es `null`, se convierte a un string (`ds`) y se prepara una clave secreta (`bytes`)
@@ -313,12 +326,13 @@ if (str.equals(ds)) {
     Toast.makeText(getApplicationContext(), s, 1).show();
     return;
 ```
+
 Compara `str` con `ds`. Luego se carga una biblioteca nativa llamada "flag"
 
->Las bibliotecas nativas son archivos compilados que contienen funciones implementadas en lenguajes como C o C++, y se utilizan cuando se requiere un rendimiento o funcionalidad específica no proporcionada directamente por el entorno de ejecución Java.
+> Las bibliotecas nativas son archivos compilados que contienen funciones implementadas en lenguajes como C o C++, y se utilizan cuando se requiere un rendimiento o funcionalidad específica no proporcionada directamente por el entorno de ejecución Java.
 
 Llama a la **getflag()** para obtener la bandera.
-**Toast.makeText(getApplicationContext(), s, 1).show()** muestra un mensaje emergente (toast) en la aplicación con el contenido de la cadena s. 
+**Toast.makeText(getApplicationContext(), s, 1).show()** muestra un mensaje emergente (toast) en la aplicación con el contenido de la cadena s.
 Los mensajes Toast son breves notificaciones visuales que aparecen temporalmente en la pantalla.
 
 Bueno, hasta aca bastante bien, nos falta leer dos metodos mas que ya mencionamos anteriromente y son `decrypt` y `cd`.
@@ -359,35 +373,36 @@ decrypt(String algorithm, String cipherText, SecretKeySpec key)
 - `cipherText`: Texto cifrado que se va a decifrar.
 - `key`: La clave secreta utilizada para el cifrado y descifrado.
 
-`Intrinsics.checkNotNullParameter`asegura que ninguno de los parámetros sea null. 
+`Intrinsics.checkNotNullParameter`asegura que ninguno de los parámetros sea null.
 Esta validación es importante para evitar excepciones [NullPointerException](https://rollbar.com/blog/how-to-catch-and-fix-nullpointerexception-in-java/#:~:text=NullPointerException%20is%20a%20runtime%20exception,refers%20to%20nothing%20or%20null%20.)
 
 ```java
 Cipher cipher = Cipher.getInstance(algorithm);
 ```
 
-Crea una instancia de la clase Cipher utilizando el algoritmo especificado (algorithm). 
+Crea una instancia de la clase Cipher utilizando el algoritmo especificado (algorithm).
 Cipher es la clase central en Java para realizar operaciones de cifrado y descifrado.
 
 ```java
 byte[] bytes = Activity2Kt.fixedIV.getBytes(Charsets.UTF_8);
 ```
-Obtiene un vector de inicialización (IV) fijo como arreglo de bytes en UTF-8. 
+
+Obtiene un vector de inicialización (IV) fijo como arreglo de bytes en UTF-8.
 El IV se utiliza junto con la clave para inicializar el objeto Cipher en algunos modos de cifrado como CBC (Cipher Block Chaining).
 
 ![](/static/images/strings/10.png)
 
-
 ```java
 IvParameterSpec ivSpec = new IvParameterSpec(bytes);
 ```
+
 Aca se crea un objeto que encapsula IV.
 
 ```java
 cipher.init(2, key, ivSpec);
 ```
-Inicializa el objeto Cipher en modo de descifrado (Cipher.DECRYPT_MODE) con la clave secreta (key) y el IV (ivSpec) proporcionados.
 
+Inicializa el objeto Cipher en modo de descifrado (Cipher.DECRYPT_MODE) con la clave secreta (key) y el IV (ivSpec) proporcionados.
 
 ```java
 byte[] decodedCipherText = Base64.decode(cipherText, 0);
@@ -397,9 +412,8 @@ return new String(decrypted, Charsets.UTF_8);
 ```
 
 Decodifica el texto cifrado (cipherText) desde Base64 a un arreglo de bytes (decodedCipherText).
-Ejecuta la operación de descifrado final sobre los datos decodificados, 
+Ejecuta la operación de descifrado final sobre los datos decodificados,
 produciendo el resultado descifrado en el arreglo de bytes decrypted.Por ultimo, lo retorna.
-
 
 ```java:cd
 private final String cd() {
@@ -416,8 +430,9 @@ private final String cd() {
     return null;
 }
 ```
+
 Devuelve una cadena de texto formateada con la fecha actual en el formato "dd/MM/yyyy".
-`Activity2Kt.cu_d = format` asigna el valor de format a la variable estática cu_d de la clase Activity2Kt. 
+`Activity2Kt.cu_d = format` asigna el valor de format a la variable estática cu_d de la clase Activity2Kt.
 Por ultimo se le asigna el valor de cu_d a la variable str y si no es nula se retorna.
 
 ![](/static/images/strings/11.png)
@@ -444,6 +459,7 @@ public final void KLOW() {
 SharedPreferences sharedPreferences = getSharedPreferences("DAD4", 0);
 SharedPreferences.Editor editor = sharedPreferences.edit();
 ```
+
 Obtiene una instancia de SharedPreferences con el nombre "DAD4" y luego
 un editor de SharedPreferences para modificar las preferencias.
 
@@ -452,7 +468,7 @@ SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 String cu_d = sdf.format(new Date());
 ```
 
-Crea una instancia de SimpleDateFormat para formatear la fecha actual como "dd/MM/yyyy" y 
+Crea una instancia de SimpleDateFormat para formatear la fecha actual como "dd/MM/yyyy" y
 guarda la fecha actual formateada como "dd/MM/yyyy" en `cu_d`.
 
 ```java
@@ -485,6 +501,7 @@ mhl://labs/[ds]
 ```
 
 No sabemos el valor de `ds`, pero si podemos conseguir el valor de `str` que es el que se pasa a la funcion `decrypt` y tenemos:
+
 - key = your_secret_key_1234567890123456
 - IV = 1234567890123456
 - Mode = CBC
@@ -527,16 +544,17 @@ Java.perform(function(){
     }, 8000);
 });
 ```
+
 Este codigo javascript utiliza la biblioteca de Frida para la instrumentacion dinamica de la aplicacion Strings.
-Espera 8 segundos después de iniciar la aplicación, busca instancias de la clase MainActivity, intercepta y redefine 
-la función KLOW() en cada instancia encontrada, imprime mensajes para indicar cuándo se intercepta y llama a KLOW(), 
+Espera 8 segundos después de iniciar la aplicación, busca instancias de la clase MainActivity, intercepta y redefine
+la función KLOW() en cada instancia encontrada, imprime mensajes para indicar cuándo se intercepta y llama a KLOW(),
 y finalmente imprime un mensaje cuando la búsqueda de instancias ha terminado.
 
 Este es el proceso entero que ejecutamos:
 ![](/static/images/strings/flag.png)
 
 1. Ejecutamos Frida server desde nuestro host. (Anteriromente con `adb push frida-server /data/local/tmp/` coloque
-frida-server dentro del emulador)
+   frida-server dentro del emulador)
 
 ![](/static/images/strings/16.png)
 
@@ -553,7 +571,7 @@ frida -U -f com.mobilehackinglab.challenge -l invoque.js
 ![](/static/images/strings/18.png)
 
 4. Luego de invocar el metodo KLOW(), vemos como se genera un archivo en shared_prefs.
-![](/static/images/strings/19.png)
+   ![](/static/images/strings/19.png)
 
 5. Veo que se genero el archivo `DAD4.xml`.
 
@@ -561,7 +579,7 @@ frida -U -f com.mobilehackinglab.challenge -l invoque.js
 
 7. Con el archivo ya generado, llamo a la Activity2 asi se ejecuta todo el bloque de codigo restante.
 
-```js 
+```js
 adb shell am start -W -a android.intent.action.VIEW -d "mhl://labs/bWhsX3NlY3JldF8xMzM3" -n com.mobilehackinglab.challenge/.Activity2
 ```
 
@@ -571,7 +589,7 @@ Por ultimo utilizo [Fridump](https://github.com/Nightbringer21/fridump) para vol
 
 ![](/static/images/strings/15.png)
 
------
+---
 
 ## Referencias
 

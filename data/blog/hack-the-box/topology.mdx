@@ -3,7 +3,7 @@ title: Topology
 date: '2023-08-12'
 lastmod: '2023-08-05'
 tags: ['labs', 'HackTheBox', 'JohnTheRipper', 'Code Injection', 'LFI', 'Directory Traversal']
-draft: false
+draft: true
 summary: 'Topology es una máquina Linux de dificultad fácil que muestra una aplicación web "LaTeX" susceptible a una vulnerabilidad de inclusión de archivos locales (LFI). Explotar la falla LFI permite recuperar un archivo `.htpasswd` que contiene una contraseña hash. Al descifrar el hash de la contraseña, se obtiene acceso "SSH" a la máquina, lo que revela un cronjob "root" que ejecuta archivos "gnuplot". La creación de un archivo `.plt` malicioso permite la escalada de privilegios. .'
 images: ['/static/images/htb/topology/topology.png']
 ---

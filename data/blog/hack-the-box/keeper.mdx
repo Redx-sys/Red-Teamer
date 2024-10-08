@@ -3,7 +3,7 @@ title: Keeper
 date: '2024-02-10'
 lastmod: '2023-08-05'
 tags: ['labs', 'HackTheBox', 'Request Tracker', 'KeePass', 'Information Leakage']
-draft: false
+draft: true
 summary: 'Keeper es una máquina Linux de fácil dificultad que cuenta con un sistema de emisión de tickets de soporte que utiliza credenciales predeterminadas. Al enumerar el servicio, podemos ver las credenciales en texto claro que conducen al acceso SSH. Con el acceso `SSH`, podemos obtener acceso a un archivo de volcado de base de datos KeePass, que podemos aprovechar para recuperar la contraseña maestra. Con acceso a la base de datos `Keepass`, podemos acceder a las claves raíz `SSH`, que se utilizan para obtener un shell privilegiado en el host.'
 images: ['/static/images/htb/leeper/keeper.png']
 ---

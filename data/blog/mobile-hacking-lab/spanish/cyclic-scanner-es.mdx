@@ -3,7 +3,7 @@ title: 'Cyclic Scanner'
 date: '2024-07-09'
 lastmod: '2023-08-05'
 tags: ['spanish', 'labs', 'mobile', 'android', 'mobilehackinglabs', 'logcat', 'RCE']
-draft: false
+draft: true
 summary: ' Esta práctica de laboratorio está diseñada para imitar escenarios del mundo real donde las vulnerabilidades dentro de los servicios de Android conducen a situaciones explotables. Los participantes tendrán la oportunidad de explotar estas vulnerabilidades para lograr la ejecución remota de código (RCE) en un dispositivo Android.'
 images: ['/static/images/cyclic/cyclicscanner.png']
 ---
@@ -12,58 +12,60 @@ images: ['/static/images/cyclic/cyclicscanner.png']
 
 ![logo cyclic scanner](/static/images/cyclic/cyclicscanner.png)
 
- Cyclic Scanner es uno de los laboratorios de [MobileHackingLab](https://www.mobilehackinglab.com/link/gnVA9O) diseñado para 
- imitar escenarios del mundo real donde las vulnerabilidades dentro de los servicios de Android conducen a situaciones 
- explotables. Los participantes tendrán la oportunidad de explotar estas vulnerabilidades para lograr la ejecución 
- remota de código (RCE) en un dispositivo Android. 
+Cyclic Scanner es uno de los laboratorios de [MobileHackingLab](https://www.mobilehackinglab.com/link/gnVA9O) diseñado para
+imitar escenarios del mundo real donde las vulnerabilidades dentro de los servicios de Android conducen a situaciones
+explotables. Los participantes tendrán la oportunidad de explotar estas vulnerabilidades para lograr la ejecución
+remota de código (RCE) en un dispositivo Android.
 
- <TOCInline toc={props.toc} exclude="Introduccion" />
+{' '}
+<TOCInline toc={props.toc} exclude="Introduccion" />
 
- ## 1.Extraer y decompilar la APK
+## 1.Extraer y decompilar la APK
 
- En este laboratorio se nos da acceso a un dispositivo Android por medio de [Corellium](https://www.corellium.com/solutions/mobile-app-pentesting)
- y para hacerlo mas ameno siempre me descargo la apk a mi host.
+En este laboratorio se nos da acceso a un dispositivo Android por medio de [Corellium](https://www.corellium.com/solutions/mobile-app-pentesting)
+y para hacerlo mas ameno siempre me descargo la apk a mi host.
 
- ```js
- shell:/$ pm path com.mobilehackinglab.cyclicscanner
- package:/data/app/~~qM4I86KbSswb6BplSzhL0A==/com.mobilehackinglab.cyclicscanner-rtyKTMCcoKLT7WV1i1hWWA==/base.apk
- ^C
- adb pull /data/app/~~qM4I86KbSswb6BplSzhL0A==/com.mobilehackinglab.cyclicscanner-rtyKTMCcoKLT7WV1i1hWWA==/base.apk
- ```
+```js
+shell:/$ pm path com.mobilehackinglab.cyclicscanner
+package:/data/app/~~qM4I86KbSswb6BplSzhL0A==/com.mobilehackinglab.cyclicscanner-rtyKTMCcoKLT7WV1i1hWWA==/base.apk
+^C
+adb pull /data/app/~~qM4I86KbSswb6BplSzhL0A==/com.mobilehackinglab.cyclicscanner-rtyKTMCcoKLT7WV1i1hWWA==/base.apk
+```
 
- Ahora descomprimimos el archivo APK en una estructura de directorios y archivos con [APKTool](https://apktool.org/docs/the-basics/intro), 
- que descompila el archivo en sus componentes originales en formato legible. 
+Ahora descomprimimos el archivo APK en una estructura de directorios y archivos con [APKTool](https://apktool.org/docs/the-basics/intro),
+que descompila el archivo en sus componentes originales en formato legible.
 
- ```shell:Decompile
+```shell:Decompile
 apktool d APP.APK
 ```
 
 ## 2.Code Review
+
 ### 2.1.AndroidManifest
 
 Empezando con la lectura del AndroidManifest, podemos ver que la app
 solicitara acceso a todos los archivos. Este permiso otorga a la aplicacion:
+
 - Acceso de lectura y escritura a todos los archivos compartidos del almacenamiento.
 - Acceso al directorio raiz tanto de la unidad USB on-the-go (OTG) como de la tarjeta SD.
-- Acceso de escritura a todos los directorios de almacenamiento interno⁠ excepto 
-    - `/Android/data/` 
-    - `/sdcard/Android` 
-    - Mayoría de los subdirectorios de `/sdcard/Android`. 
+- Acceso de escritura a todos los directorios de almacenamiento interno⁠ excepto
+  - `/Android/data/`
+  - `/sdcard/Android`
+  - Mayoría de los subdirectorios de `/sdcard/Android`.
 
 Por otro lado tambien realizara tareas en primer plano,esas tareas nos muestran una barra
 de estado de notificacion cuando la app realiza una tarea en primer plano.
 
 ![Image](/static/images/cyclic/2.png)
 
-Vemos que efectivamente debemos concederle permisos a la app cuando la inciamos por 
+Vemos que efectivamente debemos concederle permisos a la app cuando la inciamos por
 primera vez.
 ![Image](/static/images/cyclic/1.png)
-
 
 Tras concederle permisos nos aparece un boton para "Encender un Scanner".
 ![Image](/static/images/cyclic/3.png)
 
-De momento, luego de activarlo, no parece que sucediese nada. Pero si vamos a 
+De momento, luego de activarlo, no parece que sucediese nada. Pero si vamos a
 Logcat de nuestro Android Studio vemos que se esta ejecutando un escaneo de archivos.
 ![Image](/static/images/cyclic/4.png)
 
@@ -72,7 +74,7 @@ Logcat de nuestro Android Studio vemos que se esta ejecutando un escaneo de arch
 Vemos que al final de `onCreate` llama al metodo `setupPermissionLauncher()` para manejar los permisos de la aplicacion.
 ![Image](/static/images/cyclic/10.png)
 
-Luego de manejar los permisos y checkear si el usuario acciono el boton se procede 
+Luego de manejar los permisos y checkear si el usuario acciono el boton se procede
 llamar a la clase `ScanService`.
 ![Image](/static/images/cyclic/11.png)
 
@@ -82,13 +84,15 @@ En la clase `ScanService` tenemos el metodo `handleMessage`
 Al diseccionarlo, vemos que aca ocurre lo que habiamos visto anteriormente en `Logcat`.
 
 ```js
-System.out.println("starting file scan...");
+System.out.println('starting file scan...')
 ```
+
 Imprime en consola indicando que inicia el escaneo de archivos.
 
 ```js
 File externalStorageDirectory = Environment.getExternalStorageDirectory();
 ```
+
 Obtiene el directorio de almacenamiento externo.
 
 ```js
@@ -98,7 +102,8 @@ for (Object element$iv : $this$forEach$iv) {
 ...
 }
 ```
-Utiliza la función `FilesKt.walk$default` para obtener una secuencia de archivos a partir del directorio especificado 
+
+Utiliza la función `FilesKt.walk$default` para obtener una secuencia de archivos a partir del directorio especificado
 `(externalStorageDirectory)` e itera a traves de cada elemento en la secuencia de archivos.
 
 ```js
@@ -108,6 +113,7 @@ if (file.canRead() && file.isFile()) {
     System.out.println((Object) (safe ? "SAFE" : "INFECTED"));
 }
 ```
+
 Verifica que el archivo sea legible y que sea un archivo, no un directorio.
 Utiliza ScanEngine.INSTANCE.scanFile() para detectar si es "SAFE" o "INFECTED".
 
@@ -117,12 +123,12 @@ Y aca, para entender mas, tenemos que pasar a la clase ScanEngine.
 
 Al principio nos encontramos con `KNOWN_MALWARE_SAMPLE` que contiene nombre de archivos
 conocidos como muestras de malware junto a sus identificadores unicos (HASHES).
-Este tipo de estructura de datos es útil en aplicaciones de seguridad y antivirus 
+Este tipo de estructura de datos es útil en aplicaciones de seguridad y antivirus
 para comparar archivos escaneados con muestras de malware conocidas y detectar posibles amenazas.
 Se los conoce como "[antivirus basado en firmas](https://www.lenovo.com/us/en/glossary/what-is-virus-signature/?orgRef=https%253A%252F%252Fwww.google.com%252F)".
 ![Image](/static/images/cyclic/13.png)
 
-ScanEngine escanea un archivo utilizando [toybox sha1sum](https://landley.net/toybox/help.html) para calcular su hash SHA-1 
+ScanEngine escanea un archivo utilizando [toybox sha1sum](https://landley.net/toybox/help.html) para calcular su hash SHA-1
 y luego verificar si coincide o no con las muestras de malware guardadas en `KNOWN_MALWARE_SAMPLE`.
 ![Image](/static/images/cyclic/14.png)
 
@@ -131,36 +137,40 @@ dando paso a una posible ejecucion de codigo.
 ![Image](/static/images/cyclic/15.png)
 
 La app va a escribir en consola
+
 ```js
 toybox sha1sum NAME_FILE.EXT
 ```
+
 Y como no sanitiza en ningun momento el nombre del archivo,
 podriamos crear uno con el nombre `file.txt; touch POC.txt; ping google.com`
 que cuando el scanner lo lea, ejecutara codigo en el sistema.
+
 ```js
-toybox sha1sum file.txt; touch POC.txt; ping google.com 
+toybox sha1sum file.txt; touch POC.txt; ping google.com
 ```
 
-En sistemas Linux, el `;` es un separador de comandos. Esto significa que 
-despues del `;` se ejecutaran los comandos que siguen, independientemente de 
-la ejecucion exitosa o fallida. 
+En sistemas Linux, el `;` es un separador de comandos. Esto significa que
+despues del `;` se ejecutaran los comandos que siguen, independientemente de
+la ejecucion exitosa o fallida.
 
 > En este caso, para mitigar estos riesgos, es crucial tener una validacion estricta
-de los caracteres validos en los nombres de los archivos.
+> de los caracteres validos en los nombres de los archivos.
 
 ## 3. Explotacion
-1. Creo en mi host un archivo con separador de comandos en el nombre para que cree un archivo 
-llamado RCE.txt.
-![Image](/static/images/cyclic/5.png)
+
+1. Creo en mi host un archivo con separador de comandos en el nombre para que cree un archivo
+   llamado RCE.txt.
+   ![Image](/static/images/cyclic/5.png)
 2. Lo envio a la carpeta Documents en la tarjeta de memoria.
-![Image](/static/images/cyclic/6.png)
+   ![Image](/static/images/cyclic/6.png)
 
 3. El scanner lo detecta. Si todo salio bien, se tiene que haber ejecutado el comando
-y creado un archivo llamado RCE.txt .
-![Image](/static/images/cyclic/7.png)
+   y creado un archivo llamado RCE.txt .
+   ![Image](/static/images/cyclic/7.png)
 
 4. La ejecucion de comandos se produjo.
-![Image](/static/images/cyclic/8.png)
+   ![Image](/static/images/cyclic/8.png)
 
 ---
 
