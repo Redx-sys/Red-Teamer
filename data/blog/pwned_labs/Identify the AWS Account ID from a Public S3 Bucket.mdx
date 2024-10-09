@@ -1,0 +1,144 @@
+---
+title: Identify the AWS Account ID from a Public S3 Bucket
+date: '2024-10-09'
+lastmod: '2024-10-09'
+tags: ['AWS', 'Pwned Labs', 'S3', 'Script']
+draft: false
+summary: 'Este laboratorio se creo con el fin de enseñar una técnica que permite encontrar un ID de cuenta de AWS dado un bucket S3 público, y aprovecharse de esto.'
+images: ['/static/images/pwned_labs']
+---
+
+<p align="center">
+  ![Portada](https://media.licdn.com/dms/image/v2/D4E10AQHpO-AW2LIJEg/image-shrink_1280/image-shrink_1280/0/1725544363716?e=1729026000&v=beta&t=YE1ksdDq4msultJpDUqS_bMmfVdt--Svj6LGLMom28M)
+</p>
+
+<TOCInline toc={props.toc} exclude="Introduccion" />
+
+## Escenario
+
+La capacidad de exponer y aprovechar incluso los descuidos más pequeños es una habilidad codiciada. Una empresa de logística global se comunicó con nuestra empresa de ciberseguridad para obtener ayuda y le proporcionó la dirección IP de su sitio web. ¿Tu objetivo? Inicie la interacción y utilice esta dirección IP para identificar su ID de cuenta de AWS a través de un depósito público de S3 para que podamos comenzar el proceso de enumeración.
+
+## Contexto del mundo real
+
+Si los actores de amenazas consiguen un ID de cuenta de AWS, pueden intentar identificar los roles de IAM y los usuarios vinculados a esa cuenta. Pueden hacerlo aprovechando los mensajes de error detallados que devuelven los servicios de AWS al ingresar un nombre de usuario o rol incorrecto. Estos mensajes pueden verificar si existe un usuario o rol de IAM, lo que puede ayudar a los actores de amenazas a compilar una lista de posibles objetivos en la cuenta de AWS. También es posible filtrar instantáneas públicas de EBS y RDS por el ID de cuenta de AWS que las posee.
+
+## Tutorial
+
+**IMPORTANTE ANTES DE SEGUIR CON EL TUTORIAL:**  
+💡 La bandera en esta práctica de laboratorio es el ID de la cuenta de AWS asociada con el depósito S3.
+
+Si quieres probar esta técnica sin leer el tutorial, ¡siéntete libre! Las credenciales de usuario de IAM que necesita se incluyen en la sección del punto de entrada y el rol que puede asumir se denomina `arn:aws:iam::427648302155:role/LeakyBucket` .
+
+### Enumeracion
+
+Comencemos escaneando la dirección IP con Nmap. El puerto 80 está disponible, podemos comprobarlo en un navegador.
+![image](/static/images/pwned_labs/identify_the_aws_account_id_from_a_public_s3_bucket/1.png)
+
+Esto lo revela el sitio web de la empresa Mega Big Tech. No parece haber ninguna funcionalidad interesante, revisemos el código fuente.
+![image](/static/images/pwned_labs/identify_the_aws_account_id_from_a_public_s3_bucket/2.png)
+
+Esto revela que las imágenes están alojadas en un depósito de Amazon S3 llamado mega-big-tech.
+![image](/static/images/pwned_labs/identify_the_aws_account_id_from_a_public_s3_bucket/3.png)
+
+La inspección de este depósito en el navegador revela un directorio de imágenes con otras imágenes, pero nada demasiado interesante.
+![image](/static/images/pwned_labs/identify_the_aws_account_id_from_a_public_s3_bucket/4.png)
+
+Con el nombre del bucket S3, podemos intentar obtener el ID de la cuenta de AWS en la que está alojado. La investigación de Ben Bridts reveló que es posible forzar rápidamente el ID de la cuenta de AWS a la que pertenece un bucket S3. Se recomienda leer esta publicación de investigación y también revisar el código aquí, pero, en resumen, este script crea una política que utiliza la nueva clave de condición de política S3:ResourceAccount para evaluar si se nos otorga acceso a un bucket S3 en función de la cuenta de AWS a la que pertenece el bucket. Afortunadamente, el script no tiene que adivinar un billón de ID de cuentas diferentes para encontrar el correcto; el espacio de búsqueda disponible se reduce significativamente utilizando coincidencia de cadenas y comodines. Cada dígito coincidente se agrega a una variable, y la solicitud se repite hasta que se encuentra el ID de la cuenta.
+
+Le hemos proporcionado al usuario un rol que puede asumir para llevar a cabo este ataque, si no tiene acceso a una cuenta de AWS. Sin embargo, si desea configurar el usuario y la función usted mismo, puede crear las políticas siguientes.
+El usuario de IAM que asuma el rol tendría adjunta la siguiente política.
+
+```
+{
+ "Version": "2012-10-17",
+ "Statement": {
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": "arn:aws:iam::<your aws account id>:role/<your role name>"
+  }
+}
+```
+
+El rol que su usuario puede asumir tendría adjunta la siguiente política que permite al usuario los permisos de s3:GetObject y s3:ListBucket en el bucket "mega-big-tech".
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "Enum",
+            "Effect": "Allow",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::mega-big-tech/*"
+        },
+        {
+            "Sid": "Enum1",
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::mega-big-tech"
+        }
+    ]
+}
+```
+
+El rol también tendría configurada la siguiente política de confianza, lo que permitiría al usuario asumir el rol.
+
+![image](https://d2xvzw1rx4uzc3.cloudfront.net/uploads/7fs02wff9zfiohrolgw5amyxsbfwnsn2.png)
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::<your aws account id>:user/s3enum"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}
+```
+
+Para el resto de la guía de laboratorio, usaremos nuestro usuario existente. Primero, configuremos las credenciales proporcionadas usando aws configure. Esto nos permite ejecutar comandos en el contexto del usuario que puede asumir un rol que le asignamos. s3:GetObject y s3:ListBucket permisos para. Es necesario asumir un rol al que se le ha asignado uno de estos permisos para que el script funcione.
+
+```
+❯ aws sts get-caller-identity --profile lab
+
+{
+    "UserId": "AIDAWHEOTHRF62U7I6AWZ",
+    "Account": "427648302155",
+    "Arn": "arn:aws:iam::427648302155:user/s3user"
+}
+```
+
+Luego continúa y emite el comando. pipx install s3-account-search para instalar la herramienta s3-account-search. A continuación, debemos proporcionar el nombre de recurso de Amazon (ARN) del rol bajo nuestro control (es decir, en nuestra propia cuenta de AWS), así como un depósito S3 de destino en la cuenta de AWS cuyo ID queremos enumerar. Aquí hemos creado el rol y se lo proporcionamos.
+
+![image](/static/images/pwned_labs/identify_the_aws_account_id_from_a_public_s3_bucket/5.jpeg)
+
+Esto revela el ID de la cuenta de AWS. 107513503799. Podemos utilizar esta información para buscar recursos públicos que el propietario de la cuenta podría haber expuesto accidentalmente, como instantáneas públicas de EBS y RDS.
+
+Primero, sería bueno saber la región de AWS en la que se creó el depósito S3, ya que las instantáneas públicas están disponibles para todos los usuarios en la misma región en la que se creó la instantánea de EBS o RDS. Es probable que si se creó el depósito S3 en una región específica, ¡otros recursos también estarán disponibles allí!
+Para encontrar la región del depósito S3 podemos usar otro truco, esta vez con cURL.
+
+```
+curl -I https://mega-big-tech.s3.amazonaws.com
+```
+
+![image](/static/images/pwned_labs/identify_the_aws_account_id_from_a_public_s3_bucket/6.jpeg)
+
+En los encabezados de respuesta vemos que el encabezado x-amz-bucket-region está configurado para us-east-1, que es Virginia del Norte. A continuación, inicie sesión en la consola de administración de AWS en su cuenta personal de AWS y asegúrese de que us-east-1 Se selecciona la región.
+Luego busque el EC2 servicio. Haga clic en el servicio y en el panel de EC2, en el menú de la izquierda, seleccione Snapshots bajo el Elastic Block Store elemento del menú. En la lista desplegable, seleccione Public snapshots, pegue el ID de la cuenta de AWS descubierta en el campo y presione Intro/Retorno. Después de esperar un minuto, recibimos un resultado y vemos que la compañía tiene una instantánea de EBS expuesta públicamente
+![image](/static/images/pwned_labs/identify_the_aws_account_id_from_a_public_s3_bucket/7.jpeg)
+![image](/static/images/pwned_labs/identify_the_aws_account_id_from_a_public_s3_bucket/8.jpeg)
+
+Aunque los ID de cuentas de AWS no se consideran particularmente confidenciales y, a menudo, los ID de cuentas están disponibles en documentación o código públicos, conocer el ID de cuenta de una organización cuya seguridad está evaluando podría resultar útil.
+
+En términos de detección, las acciones de STS tienen lugar en la cuenta de la persona que intenta encontrar el ID de la cuenta, que no será visible para la cuenta del propietario del depósito. Sin embargo, es posible habilitar eventos de datos S3 por un costo adicional.
+
+## Referencias
+
+- [Link al laboratorio](https://pwnedlabs.io/labs/identify-the-aws-account-id-from-a-public-s3-bucket)
+- [Link 1](https://aws.amazon.com/blogs/storage/limit-access-to-amazon-s3-buckets-owned-by-specific-aws-accounts/)
+- [Link 2](https://github.com/WeAreCloudar/s3-account-search)
+- [Link 3](https://cloudar.be/awsblog/finding-the-account-id-of-any-public-s3-bucket/)
