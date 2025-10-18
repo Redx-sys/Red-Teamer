@@ -1,6 +1,6 @@
 /** @type {import("pliny/config").PlinyConfig } */
 const siteMetadata = {
-  title: 'Offensive Cloud',
+  title: 'AI Red Teamer',
   author: 'Nicolas Gula',
   headerTitle: '',
   description: '',
