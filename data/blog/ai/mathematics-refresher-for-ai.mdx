@@ -8,37 +8,39 @@ summary: 'In this first part, we will review some mathematical concepts that are
 images: ['/static/images/ai']
 ---
 
+<TOCInline toc={props.toc} exclude="Introduction" />
+
 ## Basic Arithmetic Operations
 
-#### Multiplication
+### Multiplication
 ```
 2 * 2 = 4
 ```
 
-#### Division
+### Division
 ```
 2 / 2 = 1
 ``` 
 
-#### Addition
+### Addition
 ```
 2 + 2 = 4
 ```
 
-#### Subtraction
+### Subtraction
 ```
 2 - 2 = 0
 ``` 
 
 ## Algebraic Notations
 
-#### Subscript Notation (x_t)
-This notation is commonly used in sequences and time series, where each x_t represents the value of x at time t.
+### Subscript Notation (x_t)
+This notation is commonly used in sequences and time series, where each `x_t` represents the value of `x` at time `t`.
 ```
 x_t = q(x_t | x_{t-2})
 ```
 
-x_t is read as “x at time t.” The subscript t is just a number that marks the turn: day 1, day 2, day 3... (or step 1, step 2, step 3).
+`x_t` is read as “x at time t.” The subscript t is just a number that marks the turn: day 1, day 2, day 3... (or step 1, step 2, step 3).
 
 Imagine you have a notebook where you write something down **every day**.
 x_1: what happened on day 1
@@ -46,7 +48,7 @@ x_2: what happened on day 2
 x_3: what happened on day 3
 ...and so on.
 
-##### What does ```x_t=q(x_t | x_{t−2})``` mean?
+#### What does ```x_t=q(x_t | x_{t−2})``` mean?
 
 - x_t: “what happens today (at time t)”
 - x_t - 2: “what happened two days ago”
@@ -54,9 +56,9 @@ x_3: what happened on day 3
 - q: It is a rule or model that uses what happened two days ago to determine what happens today.
 
 So, it reads like this:
-> “Today I decide using a rule that looks at what happened two days ago.”
+> Today I decide using a rule that looks at what happened two days ago.
 
-##### 1) Rule that gives a number (deterministic)
+#### 1) Rule that gives a number (deterministic)
 
 Here, q returns **the exact value** for today.
 
@@ -68,7 +70,7 @@ If you know: x1 = 10 and x2 = 8
 
 You calculate:
 
-##### 2) Rule that gives possibilities (probabilistic)
+#### 2) Rule that gives possibilities (probabilistic)
 Here q does not give you a fixed number, it gives you **probabilities** of what today might be, **based on** what happened 2 days ago.
 
 **Super simple “weather” example:**
@@ -84,7 +86,7 @@ Translation: “**Today's chances** depend on **how it was two days ago**.”
 
 > In this case, x_t appears inside q( ) because it is the thing we want to decide (what value it takes today), and xt−2 is the clue we use to decide.
 
-##### Simple exercises:
+#### Simple exercises:
 
 A. Fixed rule (numbers):
 
@@ -97,11 +99,32 @@ Calculate: x_3, x_4, and x_5
 If it was “Rain” two days ago, today there is a 70% chance of ‘Rain’ and a 30% chance of “Sun.”
 The **most likely prediction** for today is “**Rain**.”
 
+**B. Probability rule (weather):**
 
-## Exercise Solutions
+If it was “Rain” two days ago, today there is a 70% chance of ‘Rain’ and a 30% chance of “Sun.”
+
+
+## Exercises Solutions
 A. Fixed rule (numbers)
 * (x_3 = x_{1} + 3 = 4 + 3 = \mathbf{7})
 * (x_4 = x_{2} + 3 = 6 + 3 = \mathbf{9})
 * (x_5 = x_{3} + 3 = 7 + 3 = \mathbf{10})
 
 **Resultado:** (x_3=7), (x_4=9), (x_5=10).
+
+B. Probability rule (weather)
+The **most likely prediction** for today is “**Rain**.”
+
+---
+
+## Superscript Notation
+Superscript notation is used to denote exponents or powers. For example:
+```
+x^2 = x * x 
+```
+
+If X=2
+x^2 = 2 * 2 = 4
+X^3 = 2 * 2 * 2 =  8
+
+## Norm 
