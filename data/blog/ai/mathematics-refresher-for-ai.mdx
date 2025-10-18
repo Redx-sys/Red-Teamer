@@ -8,6 +8,10 @@ summary: 'In this first part, we will review some mathematical concepts that are
 images: ['/static/images/ai']
 ---
 
+<p align="center">
+  ![Portada](/static/images/ai/mathematics_refresher_for_ai_part_1/1.jpg)
+</p>
+
 <TOCInline toc={props.toc} exclude="Introduction" />
 
 ## Basic Arithmetic Operations
@@ -104,16 +108,7 @@ The **most likely prediction** for today is “**Rain**.”
 If it was “Rain” two days ago, today there is a 70% chance of ‘Rain’ and a 30% chance of “Sun.”
 
 
-## Exercises Solutions
-A. Fixed rule (numbers)
-* (x_3 = x_{1} + 3 = 4 + 3 = \mathbf{7})
-* (x_4 = x_{2} + 3 = 6 + 3 = \mathbf{9})
-* (x_5 = x_{3} + 3 = 7 + 3 = \mathbf{10})
 
-**Resultado:** (x_3=7), (x_4=9), (x_5=10).
-
-B. Probability rule (weather)
-The **most likely prediction** for today is “**Rain**.”
 
 ---
 
@@ -128,3 +123,63 @@ x^2 = 2 * 2 = 4
 X^3 = 2 * 2 * 2 =  8
 
 ## Norm 
+The norm measures the size or length of a vector. 
+The norms are used in various applications, such as measuring the distance between vectors, regularizing models to avoid overfitting, and normalizing data.
+
+### What is a vector?
+
+A vector is simply **a short list of numbers**. In 2D, for example, v=(x,y).
+You can imagine it as **an arrow** from (0,0) to the point (x,y).
+
+The **norm** is “**how long is the arrow**.”
+Different standards = **different rules** for measuring that length.
+
+### Three famous rules (with visual idea)
+
+- L2 (Euclidean) = direct diagonal
+![l2](/static/images/ai/mathematics_refresher_for_ai_part_1/2.png)
+It is the “normal” straight tape measure.
+
+- L1 (Manhattan) = by the block
+![l1](/static/images/ai/mathematics_refresher_for_ai_part_1/3.png)
+You can only go right/left and up/down (like streets on a grid).
+
+- L∞ (infinity) = the largest deviation
+![li](/static/images/ai/mathematics_refresher_for_ai_part_1/4.png)
+Look how far you went in one direction (the greater of the two).
+
+### A super easy example: v=(2,1)
+
+- L2 norm: √(2² + 1²) = √5 ≈ 2.24
+- L1 norm: |2| + |1| = 3
+3 steps through streets (2 to the right + 1 up)    
+- L∞ norm: max(|2|, |1|) = 2
+2 → your greatest deviation was “2” on the X-axis.
+
+> The three numbers are different because the measuring rule is different.
+
+### Exercise:
+4) v=(3,4)
+
+Solve it for L2, L1, and L∞.
+
+---
+
+## Exercises Solutions
+A. Fixed rule (numbers)
+* (x_3 = x_{1} + 3 = 4 + 3 = \mathbf{7})
+* (x_4 = x_{2} + 3 = 6 + 3 = \mathbf{9})
+* (x_5 = x_{3} + 3 = 7 + 3 = \mathbf{10})
+
+**Resultado:** (x_3=7), (x_4=9), (x_5=10).
+
+B. Probability rule (weather)
+The **most likely prediction** for today is “**Rain**.”
+
+C. v=(3,4)
+
+- L2 norm: √(3² + 4²) = √25 = 5
+- L1 norm: |3| + |4| = 7
+7 steps through streets (3 to the right + 4 up)
+- L∞ norm: max(|3|, |4|) = 4
+4 → your greatest deviation was “4” on the Y-axis.
